@@ -164,6 +164,11 @@ class PublicOrderApiTest {
                 .andExpect(jsonPath("$.customerPhone").doesNotExist()).andExpect(jsonPath("$.trackingToken").doesNotExist());
     }
 
+    @Test
+    void keepsAdministrativeRoutesProtected() throws Exception {
+        mvc.perform(get("/api/v1/admin/orders")).andExpect(status().isForbidden());
+    }
+
     private JsonNode create(Map<String, Object> request, MockMultipartFile receipt, int status) throws Exception {
         MockMultipartFile orderPart = new MockMultipartFile("order", "order.json", MediaType.APPLICATION_JSON_VALUE, json.writeValueAsBytes(request));
         var builder = multipart("/api/v1/public/orders").file(orderPart); if (receipt != null) builder.file(receipt);

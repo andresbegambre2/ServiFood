@@ -28,11 +28,11 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/public/orders/**"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/orders/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/public/orders", "/api/v1/public/orders/quote").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().denyAll())
                 .build();

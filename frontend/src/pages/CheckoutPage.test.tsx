@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { CartContext, type CartContextValue } from '../features/cart/cart-context'
 import { StorefrontContext, type StorefrontContextValue } from '../features/storefront/storefront-context'
 import type { StorefrontData, TransferPayment } from '../types/public'
-import { CheckoutPage } from './CheckoutPage'
+import { CheckoutPage, CheckoutSummary } from './CheckoutPage'
 
 const cart: CartContextValue = {
   lines: [{ id: 'line-1', productId: 1, slug: 'doble-bacon', name: 'Doble Bacon', imagePath: null, unitPriceMinor: 32_000_00, quantity: 1, notes: '', extras: [] }],
@@ -50,5 +50,12 @@ describe('CheckoutPage storefront configuration', () => {
     const html = renderCheckout({ data: null, loading: false, error: 'Servicio no disponible', retry: () => undefined })
     expect(html).toContain('No pudimos cargar la configuración')
     expect(html).toContain('Servicio no disponible')
+  })
+
+  it('replaces quote loading with an error and retry action when pricing fails', () => {
+    const html = renderToString(<CartContext.Provider value={cart}><CheckoutSummary quote={null} error="" quoteError="No autorizado" retryQuote={() => undefined} submitting={false} currency="COP" /></CartContext.Provider>)
+    expect(html).toContain('No pudimos actualizar los precios')
+    expect(html).toContain('Reintentar precios')
+    expect(html).not.toContain('Actualizando precios')
   })
 })
