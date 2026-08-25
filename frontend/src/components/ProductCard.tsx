@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom'
+import type { Product } from '../types/public'
+import { formatMoney, toMinorUnits } from '../utils/money'
+import { ProductImage } from './ProductImage'
+export function ProductCard({ product, currency = 'COP' }: { product: Product; currency?: string }) { return <article className="product-card"><Link className="product-card__image" to={`/menu/${product.slug}`} aria-label={`Ver ${product.name}`}><ProductImage src={product.imagePath} alt={product.name} />{product.featured && <span className="badge">Favorita</span>}</Link><div className="product-card__body"><p className="product-card__category">{product.category.name}</p><h3><Link to={`/menu/${product.slug}`}>{product.name}</Link></h3><p>{product.description}</p><div className="product-card__footer"><strong>{formatMoney(toMinorUnits(product.price), currency)}</strong><Link className="round-action" to={`/menu/${product.slug}`} aria-label={`Personalizar ${product.name}`}>+</Link></div></div></article> }

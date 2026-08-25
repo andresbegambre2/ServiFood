@@ -1,0 +1,2 @@
+interface Props { value: number; onChange: (value: number) => void; label?: string }
+export function QuantityControl({ value, onChange, label = 'Cantidad' }: Props) { return <div className="quantity" aria-label={label}><button type="button" onClick={() => onChange(Math.max(1, value - 1))} disabled={value <= 1} aria-label="Disminuir cantidad">−</button><output aria-live="polite">{value}</output><button type="button" onClick={() => onChange(Math.min(99, value + 1))} aria-label="Aumentar cantidad">+</button></div> }
