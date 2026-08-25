@@ -15,5 +15,6 @@ public class Extra extends AuditableEntity {
     protected Extra() {}
     public Extra(String name, BigDecimal price) { this.name = name; this.price = price; }
     public Long getId() { return id; } public String getName() { return name; } public BigDecimal getPrice() { return price; }
+    public String getDescription() { return description; }
     public boolean isAvailable() { return available; }
 }

@@ -20,4 +20,5 @@ public class BusinessHours extends AuditableEntity {
     public boolean isTimeRangeValid() { return closed ? opensAt == null && closesAt == null : opensAt != null && closesAt != null && closesAt.isAfter(opensAt); }
     public Long getId() { return id; } public DayOfWeek getDayOfWeek() { return dayOfWeek; } public int getSlotNumber() { return slotNumber; }
     public boolean isClosed() { return closed; }
+    public LocalTime getOpensAt() { return opensAt; } public LocalTime getClosesAt() { return closesAt; }
 }
