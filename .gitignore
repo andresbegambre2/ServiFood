@@ -31,4 +31,8 @@ Thumbs.db
 
 # Frontend dependencies
 node_modules/
+dist/
+target/
 
+# Environment-specific IDE files
+*.iml
