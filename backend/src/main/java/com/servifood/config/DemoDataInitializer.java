@@ -30,7 +30,7 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     public DemoDataInitializer(CategoryRepository categories, ExtraRepository extras, ProductRepository products,
             InternalUserRepository users, BusinessSettingsRepository settings, BusinessHoursRepository hours,
-            PasswordEncoder passwordEncoder, @Value("${app.demo.admin-password:demo-only-change-me}") String demoPassword) {
+            PasswordEncoder passwordEncoder, @Value("${app.demo.admin-password}") String demoPassword) {
         this.categories = categories; this.extras = extras; this.products = products; this.users = users;
         this.settings = settings; this.hours = hours; this.passwordEncoder = passwordEncoder; this.demoPassword = demoPassword;
     }

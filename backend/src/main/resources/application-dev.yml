@@ -1,4 +1,3 @@
 app:
   demo:
-    admin-password: ${DEMO_ADMIN_PASSWORD:demo-only-change-me}
-
+    admin-password: ${DEMO_ADMIN_PASSWORD}
