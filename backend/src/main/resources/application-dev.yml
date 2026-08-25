@@ -1,0 +1,3 @@
+app:
+  demo:
+    admin-password: ${DEMO_ADMIN_PASSWORD}

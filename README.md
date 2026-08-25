@@ -46,10 +46,13 @@ No es necesario instalar Maven: el repositorio incluye Maven Wrapper.
 
 La web estará disponible en `http://localhost:5173`. El endpoint inicial es `GET http://localhost:8080/api/v1/public/status`.
 
+El diseño de entidades, relaciones, snapshots históricos y horarios se describe en [`docs/domain-model.md`](docs/domain-model.md).
+
 ## Perfiles y seguridad
 
 - Los datos sensibles se leen de variables de entorno; `.env` está excluido de Git.
 - El perfil `prod` exige credenciales de base de datos externas.
+- El perfil `dev` exige `DEMO_ADMIN_PASSWORD` para crear el usuario administrativo de demostración.
 - Spring Security deniega por defecto cualquier ruta no declarada pública.
 - CORS permite únicamente el origen configurado.
 - JPA no modifica el esquema; Flyway administra los cambios de base de datos.
