@@ -32,7 +32,11 @@ public class PublicCatalogService {
     public BusinessPublicResponse publicBusiness() {
         BusinessSettings business = settings.findFirstByOrderByIdAsc().orElseThrow(() -> new ResourceNotFoundException("Business settings", "default"));
         List<BusinessHoursResponse> schedule = hours.findAll().stream().sorted(Comparator.comparing(BusinessHours::getDayOfWeek).thenComparingInt(BusinessHours::getSlotNumber)).map(this::schedule).toList();
-        return new BusinessPublicResponse(business.getTradeName(), business.getDescription(), business.getLogoPath(), business.getPhone(), business.getWhatsapp(), business.getAddress(), business.getInstagram(), business.getFacebook(), business.getBaseDeliveryFee(), business.getEstimatedPreparationMinutes(), business.getCurrency(), schedule);
+        boolean transferConfigured = business.getTransferProvider() != null && business.getTransferAccountHolder() != null
+                && business.getTransferAccountReference() != null;
+        TransferPaymentResponse transfer = new TransferPaymentResponse(business.getTransferProvider(),
+                business.getTransferAccountHolder(), business.getTransferAccountReference(), business.getPaymentQrPath(), transferConfigured);
+        return new BusinessPublicResponse(business.getTradeName(), business.getDescription(), business.getLogoPath(), business.getPhone(), business.getWhatsapp(), business.getAddress(), business.getInstagram(), business.getFacebook(), business.getBaseDeliveryFee(), business.getEstimatedPreparationMinutes(), business.getCurrency(), business.getTimeZone(), transfer, schedule);
     }
 
     private CategoryResponse category(Category value) { return new CategoryResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription()); }

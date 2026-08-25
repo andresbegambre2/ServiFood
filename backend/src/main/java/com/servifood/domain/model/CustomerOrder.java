@@ -14,9 +14,12 @@ import com.servifood.domain.exception.DomainException;
 public class CustomerOrder extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @NotBlank @Size(max = 30) @Column(name = "public_number", nullable = false, unique = true, length = 30) private String publicNumber;
+    @Size(max = 36) @Column(name = "client_request_id", unique = true, length = 36) private String clientRequestId;
+    @Size(max = 64) @Column(name = "tracking_token_hash", length = 64) private String trackingTokenHash;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "customer_id") private Customer customer;
     @NotBlank @Size(max = 120) @Column(name = "customer_name_snapshot", nullable = false, length = 120) private String customerNameSnapshot;
     @NotBlank @Size(min = 7, max = 30) @Column(name = "customer_phone_snapshot", nullable = false, length = 30) private String customerPhoneSnapshot;
+    @Email @Size(max = 190) @Column(name = "customer_email_snapshot", length = 190) private String customerEmailSnapshot;
     @NotNull @Enumerated(EnumType.STRING) @Column(name = "delivery_type", nullable = false, length = 20) private DeliveryType deliveryType;
     @Size(max = 500) @Column(name = "delivery_address_snapshot", length = 500) private String deliveryAddressSnapshot;
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal subtotal = BigDecimal.ZERO;
@@ -24,6 +27,7 @@ public class CustomerOrder extends AuditableEntity {
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal discount = BigDecimal.ZERO;
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal total = BigDecimal.ZERO;
     @Size(max = 1000) @Column(length = 1000) private String notes;
+    @Positive @Column(name = "estimated_minutes") private Integer estimatedMinutes;
     @NotNull @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private OrderStatus status = OrderStatus.NEW;
     @Column(name = "confirmed_at") private Instant confirmedAt;
     @Column(name = "prepared_at") private Instant preparedAt;
@@ -35,6 +39,10 @@ public class CustomerOrder extends AuditableEntity {
     public CustomerOrder(String publicNumber, Customer customer, String customerName, String customerPhone, DeliveryType deliveryType, String deliveryAddress, BigDecimal deliveryFee) {
         this.publicNumber = publicNumber; this.customer = customer; this.customerNameSnapshot = customerName; this.customerPhoneSnapshot = customerPhone;
         this.deliveryType = deliveryType; this.deliveryAddressSnapshot = deliveryAddress; this.deliveryFee = deliveryFee; recalculate();
+    }
+    public void configurePublicCheckout(String clientRequestId, String trackingTokenHash, String customerEmail, int estimatedMinutes) {
+        this.clientRequestId = clientRequestId; this.trackingTokenHash = trackingTokenHash;
+        this.customerEmailSnapshot = customerEmail; this.estimatedMinutes = estimatedMinutes;
     }
     public void addItem(OrderItem item) { item.assignTo(this); items.add(item); recalculate(); }
     public void applyDiscount(BigDecimal discount) { this.discount = discount; recalculate(); }
@@ -57,8 +65,12 @@ public class CustomerOrder extends AuditableEntity {
     @AssertTrue(message = "order totals are inconsistent")
     public boolean isFinancialBreakdownValid() { return subtotal != null && deliveryFee != null && discount != null && total != null && total.signum() >= 0 && total.compareTo(subtotal.add(deliveryFee).subtract(discount).max(BigDecimal.ZERO)) == 0; }
     public Long getId() { return id; } public String getPublicNumber() { return publicNumber; } public OrderStatus getStatus() { return status; }
-    public BigDecimal getSubtotal() { return subtotal; } public BigDecimal getTotal() { return total; } public List<OrderItem> getItems() { return List.copyOf(items); }
-    public String getCustomerNameSnapshot() { return customerNameSnapshot; }
+    public BigDecimal getSubtotal() { return subtotal; } public BigDecimal getDeliveryFee() { return deliveryFee; }
+    public BigDecimal getDiscount() { return discount; } public BigDecimal getTotal() { return total; } public List<OrderItem> getItems() { return List.copyOf(items); }
+    public String getCustomerNameSnapshot() { return customerNameSnapshot; } public String getCustomerPhoneSnapshot() { return customerPhoneSnapshot; }
+    public String getCustomerEmailSnapshot() { return customerEmailSnapshot; } public DeliveryType getDeliveryType() { return deliveryType; }
+    public String getDeliveryAddressSnapshot() { return deliveryAddressSnapshot; } public Integer getEstimatedMinutes() { return estimatedMinutes; }
+    public String getClientRequestId() { return clientRequestId; } public String getTrackingTokenHash() { return trackingTokenHash; }
     public Instant getConfirmedAt() { return confirmedAt; } public Instant getPreparedAt() { return preparedAt; }
     public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
 }
