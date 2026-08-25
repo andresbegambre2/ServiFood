@@ -13,6 +13,10 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 server:
   port: ${SERVER_PORT:8080}
@@ -23,3 +27,9 @@ server:
 app:
   cors:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  orders:
+    allow-when-closed: ${ALLOW_ORDERS_WHEN_CLOSED:false}
+    tracking-secret: ${TRACKING_SECRET:local-development-tracking-secret-change-before-production}
+  uploads:
+    receipts-directory: ${RECEIPTS_DIRECTORY:./var/receipts}
+    receipts-max-bytes: ${RECEIPTS_MAX_BYTES:5242880}

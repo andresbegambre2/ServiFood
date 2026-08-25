@@ -7,3 +7,7 @@ spring:
 server:
   forward-headers-strategy: framework
 
+app:
+  orders:
+    tracking-secret: ${TRACKING_SECRET}
+
