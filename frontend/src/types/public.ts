@@ -5,7 +5,7 @@ export interface ProductDetail extends Product { allowedExtras: Extra[] }
 export interface Promotion { id: number; name: string; description: string | null; discountType: 'PERCENTAGE' | 'FIXED_AMOUNT'; discountValue: number; startsAt: string; endsAt: string; minimumPurchase: number }
 export interface BusinessHours { dayOfWeek: string; slotNumber: number; opensAt: string | null; closesAt: string | null; closed: boolean }
 export interface TransferPayment { provider: string | null; accountHolder: string | null; accountReference: string | null; qrPath: string | null; configured: boolean }
-export interface Business { tradeName: string; description: string | null; logoPath: string | null; phone: string; whatsapp: string; address: string; instagram: string | null; facebook: string | null; baseDeliveryFee: number; estimatedPreparationMinutes: number; currency: string; timeZone: string; transfer: TransferPayment; hours: BusinessHours[] }
+export interface Business { tradeName: string; description: string | null; logoPath: string | null; phone: string; whatsapp: string; address: string; instagram: string | null; facebook: string | null; baseDeliveryFee: number; estimatedPreparationMinutes: number; currency: string; timeZone: string; transfer?: TransferPayment | null; hours: BusinessHours[] }
 export interface StorefrontData { business: Business; categories: Category[]; products: Product[]; promotions: Promotion[] }
 
 export type DeliveryType = 'DELIVERY' | 'PICKUP'
