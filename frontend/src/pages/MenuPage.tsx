@@ -1,0 +1,10 @@
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { EmptyState, ErrorState, LoadingGrid } from '../components/AsyncState'
+import { ProductCard } from '../components/ProductCard'
+import { useStorefront } from '../features/storefront/storefront-context'
+
+export function MenuPage() { const { data, loading, error, retry } = useStorefront(); const [params, setParams] = useSearchParams(); const [query, setQuery] = useState(''); const category = params.get('category') ?? 'all';
+  const filtered = useMemo(() => data?.products.filter((product) => (category === 'all' || product.category.slug === category) && `${product.name} ${product.description}`.toLocaleLowerCase('es').includes(query.trim().toLocaleLowerCase('es'))) ?? [], [data, category, query])
+  if (error) return <main className="page"><ErrorState message={error} retry={retry} /></main>
+  return <main className="menu-page"><header className="menu-intro"><p className="eyebrow">Cocinado al momento</p><h1>Menú <em>sin filtros.</em></h1><p>Elige una favorita, súmale lo tuyo y arma el pedido a tu manera.</p></header><section className="menu-tools" aria-label="Filtros del menú"><label className="search-field"><span className="sr-only">Buscar productos</span><b>⌕</b><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Busca por nombre o ingrediente" maxLength={80} /><small>{filtered.length} resultados</small></label><div className="category-chips"><button className={category === 'all' ? 'active' : ''} onClick={() => setParams({})}>Todos</button>{data?.categories.map((item) => <button className={category === item.slug ? 'active' : ''} onClick={() => setParams({ category: item.slug })} key={item.id}>{item.name}</button>)}</div></section>{loading ? <LoadingGrid /> : filtered.length === 0 ? <EmptyState /> : <section className="product-grid menu-grid">{filtered.map((product) => <ProductCard product={product} currency={data?.business.currency} key={product.id} />)}</section>}</main> }

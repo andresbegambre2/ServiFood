@@ -1,0 +1,3 @@
+export function LoadingGrid() { return <div className="product-grid" aria-label="Cargando productos">{[1,2,3,4].map((item) => <div className="skeleton" key={item}><span /><span /><span /></div>)}</div> }
+export function ErrorState({ message, retry }: { message: string; retry: () => void }) { return <section className="state-panel" role="alert"><span>!</span><h2>Algo se enfrió</h2><p>{message}</p><button className="button button--light" onClick={retry}>Intentar de nuevo</button></section> }
+export function EmptyState({ title = 'No encontramos productos' }: { title?: string }) { return <section className="state-panel"><span>○</span><h2>{title}</h2><p>Prueba otra categoría o cambia tu búsqueda.</p></section> }

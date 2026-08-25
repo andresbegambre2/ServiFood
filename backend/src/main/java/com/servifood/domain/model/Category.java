@@ -17,5 +17,7 @@ public class Category extends AuditableEntity {
     protected Category() {}
     public Category(String name, String slug, int displayOrder) { this.name = name; this.slug = slug; this.displayOrder = displayOrder; }
     public Long getId() { return id; } public String getName() { return name; } public String getSlug() { return slug; }
+    public String getDescription() { return description; }
     public int getDisplayOrder() { return displayOrder; } public boolean isActive() { return active; }
+    public void deactivate() { active = false; }
 }

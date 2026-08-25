@@ -27,8 +27,12 @@ public class Product extends AuditableEntity {
     }
     public void allowExtra(Extra extra) { allowedExtras.add(extra); }
     public void changePrice(BigDecimal newPrice) { this.price = newPrice; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+    public void markFeatured() { this.featured = true; }
     public Long getId() { return id; } public String getName() { return name; } public String getSlug() { return slug; }
     public BigDecimal getPrice() { return price; } public Category getCategory() { return category; }
+    public String getDescription() { return description; } public String getImagePath() { return imagePath; }
     public Set<Extra> getAllowedExtras() { return Set.copyOf(allowedExtras); }
     public boolean isAvailable() { return available; } public boolean isFeatured() { return featured; }
+    public void markUnavailable() { available = false; }
 }

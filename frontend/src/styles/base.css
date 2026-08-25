@@ -1,0 +1,13 @@
+:root { font-family: Inter, "Segoe UI", Arial, sans-serif; color: #f5f1e7; background: #10110e; font-synthesis: none; text-rendering: optimizeLegibility; --ink: #10110e; --paper: #f5f1e7; --acid: #c8ff32; --orange: #ff6338; --muted: #aaa99f; --surface: #191a16; --line: rgba(245,241,231,.14); }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--ink); overflow-x: hidden; }
+body, button, input, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; }
+button { color: inherit; }
+img { display: block; max-width: 100%; }
+::selection { color: var(--ink); background: var(--acid); }
+:focus-visible { outline: 3px solid var(--acid); outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }

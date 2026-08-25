@@ -1,33 +1,13 @@
-import './App.css'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { CartProvider } from './features/cart/CartProvider'
+import { StorefrontProvider } from './features/storefront/StorefrontProvider'
+import { PublicLayout } from './layouts/PublicLayout'
+import { HomePage } from './pages/HomePage'
+import { MenuPage } from './pages/MenuPage'
+import { ProductPage } from './pages/ProductPage'
+import { CartPage } from './pages/CartPage'
+import { CheckoutPlaceholderPage } from './pages/CheckoutPlaceholderPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import './styles/storefront.css'
 
-function App() {
-  return (
-    <main>
-      <nav className="navigation" aria-label="Navegación principal">
-        <a className="brand" href="/" aria-label="ServiFood, inicio">SERVI<span>FOOD</span></a>
-        <span className="status"><i aria-hidden="true" /> Próximamente</span>
-      </nav>
-      <section className="hero">
-        <div className="hero__content">
-          <p className="eyebrow">Sabor local · Experiencia digital</p>
-          <h1>Tu antojo,<br /><em>sin vueltas.</em></h1>
-          <p className="intro">Estamos construyendo una nueva forma de pedir, preparar y disfrutar tus hamburguesas favoritas.</p>
-          <div className="actions">
-            <a className="button" href="#about">Conocer ServiFood <span>↘</span></a>
-            <p>Pedidos simples.<br />Cocina en movimiento.</p>
-          </div>
-        </div>
-        <div className="hero__art" aria-hidden="true">
-          <div className="orbit orbit--one" /><div className="orbit orbit--two" />
-          <div className="burger-mark"><span className="bun bun--top" /><span className="filling filling--cheese" /><span className="filling filling--patty" /><span className="bun bun--bottom" /></div>
-          <span className="stamp">HECHO<br />CON<br />ACTITUD</span>
-        </div>
-      </section>
-      <section className="promise" id="about">
-        <p>01</p><h2>Una plataforma.<br />Toda la operación.</h2><p>Cliente, caja y cocina conectados para servir mejor.</p>
-      </section>
-    </main>
-  )
-}
-
-export default App
+export default function App() { return <BrowserRouter><StorefrontProvider><CartProvider><Routes><Route element={<PublicLayout />}><Route index element={<HomePage />} /><Route path="menu" element={<MenuPage />} /><Route path="menu/:slug" element={<ProductPage />} /><Route path="cart" element={<CartPage />} /><Route path="checkout" element={<CheckoutPlaceholderPage />} /><Route path="*" element={<NotFoundPage />} /></Route></Routes></CartProvider></StorefrontProvider></BrowserRouter> }

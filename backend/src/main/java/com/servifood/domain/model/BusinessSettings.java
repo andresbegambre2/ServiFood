@@ -24,6 +24,11 @@ public class BusinessSettings extends AuditableEntity {
         this.tradeName = tradeName; this.description = description; this.phone = phone; this.whatsapp = whatsapp; this.address = address;
         this.baseDeliveryFee = deliveryFee; this.estimatedPreparationMinutes = preparationMinutes; this.currency = currency;
     }
+    public void setSocialLinks(String instagram, String facebook) { this.instagram = instagram; this.facebook = facebook; }
     public Long getId() { return id; } public String getTradeName() { return tradeName; }
     public BigDecimal getBaseDeliveryFee() { return baseDeliveryFee; } public String getCurrency() { return currency; }
+    public String getDescription() { return description; } public String getLogoPath() { return logoPath; }
+    public String getPhone() { return phone; } public String getWhatsapp() { return whatsapp; } public String getAddress() { return address; }
+    public String getInstagram() { return instagram; } public String getFacebook() { return facebook; }
+    public Integer getEstimatedPreparationMinutes() { return estimatedPreparationMinutes; }
 }
