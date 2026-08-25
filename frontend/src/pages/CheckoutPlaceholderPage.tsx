@@ -1,2 +1,0 @@
-import { Link } from 'react-router-dom'
-export function CheckoutPlaceholderPage() { return <main className="page"><section className="state-panel checkout-placeholder"><span>→</span><p className="eyebrow">Siguiente fase</p><h1>Tu selección está lista.</h1><p>El checkout y la recepción de pedidos se habilitarán en la próxima etapa. Tu carrito queda guardado.</p><Link className="button button--acid" to="/cart">Volver al pedido</Link></section></main> }
