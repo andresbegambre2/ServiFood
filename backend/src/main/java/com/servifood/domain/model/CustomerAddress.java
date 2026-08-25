@@ -21,4 +21,3 @@ public class CustomerAddress extends AuditableEntity {
     public Long getId() { return id; } public Customer getCustomer() { return customer; } public String getAddress() { return address; }
     public String getNeighborhood() { return neighborhood; } public boolean isPrimaryAddress() { return primaryAddress; }
 }
-

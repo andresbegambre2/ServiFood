@@ -17,4 +17,3 @@ public class Extra extends AuditableEntity {
     public Long getId() { return id; } public String getName() { return name; } public BigDecimal getPrice() { return price; }
     public boolean isAvailable() { return available; }
 }
-

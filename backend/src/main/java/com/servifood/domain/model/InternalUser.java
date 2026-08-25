@@ -33,4 +33,3 @@ public class InternalUser extends AuditableEntity {
     public boolean isActive() { return active; }
     public void deactivate() { active = false; }
 }
-

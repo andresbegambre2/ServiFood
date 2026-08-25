@@ -19,4 +19,3 @@ public class Category extends AuditableEntity {
     public Long getId() { return id; } public String getName() { return name; } public String getSlug() { return slug; }
     public int getDisplayOrder() { return displayOrder; } public boolean isActive() { return active; }
 }
-
