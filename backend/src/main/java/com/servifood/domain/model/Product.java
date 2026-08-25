@@ -26,9 +26,9 @@ public class Product extends AuditableEntity {
         this.name = name; this.slug = slug; this.description = description; this.price = price; this.category = category;
     }
     public void allowExtra(Extra extra) { allowedExtras.add(extra); }
+    public void changePrice(BigDecimal newPrice) { this.price = newPrice; }
     public Long getId() { return id; } public String getName() { return name; } public String getSlug() { return slug; }
     public BigDecimal getPrice() { return price; } public Category getCategory() { return category; }
     public Set<Extra> getAllowedExtras() { return Set.copyOf(allowedExtras); }
     public boolean isAvailable() { return available; } public boolean isFeatured() { return featured; }
 }
-

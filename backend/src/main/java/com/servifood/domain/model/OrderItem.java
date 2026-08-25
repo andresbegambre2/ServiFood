@@ -18,13 +18,13 @@ public class OrderItem {
     @Positive @Column(nullable = false) private int quantity;
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal subtotal;
     @Size(max = 500) @Column(length = 500) private String notes;
-    @Valid @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true) private List<OrderItemExtra> extras = new ArrayList<>();
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true) private List<@Valid OrderItemExtra> extras = new ArrayList<>();
     protected OrderItem() {}
     public OrderItem(Product product, int quantity, String notes) {
         this.product = product; this.productNameSnapshot = product.getName(); this.unitPriceSnapshot = product.getPrice(); this.quantity = quantity; this.notes = notes; recalculate();
     }
     void assignTo(CustomerOrder order) { this.order = order; }
-    public void addExtra(OrderItemExtra extra) { extra.assignTo(this); extras.add(extra); recalculate(); }
+    public void addExtra(OrderItemExtra extra) { extra.assignTo(this); extras.add(extra); recalculate(); if (order != null) order.recalculate(); }
     private void recalculate() { BigDecimal extrasTotal = extras.stream().map(OrderItemExtra::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add); subtotal = unitPriceSnapshot.multiply(BigDecimal.valueOf(quantity)).add(extrasTotal); }
     public Long getId() { return id; } public String getProductNameSnapshot() { return productNameSnapshot; }
     public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; } public int getQuantity() { return quantity; }

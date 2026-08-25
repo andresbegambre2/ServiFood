@@ -7,6 +7,7 @@ import java.util.List;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import com.servifood.domain.exception.DomainException;
 
 @Entity
 @Table(name = "orders")
@@ -29,7 +30,7 @@ public class CustomerOrder extends AuditableEntity {
     @Column(name = "ready_at") private Instant readyAt;
     @Column(name = "delivered_at") private Instant deliveredAt;
     @Column(name = "cancelled_at") private Instant cancelledAt;
-    @Valid @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true) private List<OrderItem> items = new ArrayList<>();
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true) private List<@Valid OrderItem> items = new ArrayList<>();
     protected CustomerOrder() {}
     public CustomerOrder(String publicNumber, Customer customer, String customerName, String customerPhone, DeliveryType deliveryType, String deliveryAddress, BigDecimal deliveryFee) {
         this.publicNumber = publicNumber; this.customer = customer; this.customerNameSnapshot = customerName; this.customerPhoneSnapshot = customerPhone;
@@ -37,10 +38,20 @@ public class CustomerOrder extends AuditableEntity {
     }
     public void addItem(OrderItem item) { item.assignTo(this); items.add(item); recalculate(); }
     public void applyDiscount(BigDecimal discount) { this.discount = discount; recalculate(); }
-    private void recalculate() {
+    void recalculate() {
         subtotal = items.stream().map(OrderItem::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         total = subtotal.add(deliveryFee == null ? BigDecimal.ZERO : deliveryFee).subtract(discount == null ? BigDecimal.ZERO : discount).max(BigDecimal.ZERO);
     }
+    public void confirm() { requireStatus(OrderStatus.NEW); status = OrderStatus.CONFIRMED; confirmedAt = Instant.now(); }
+    public void startPreparation() { requireStatus(OrderStatus.CONFIRMED); status = OrderStatus.PREPARING; preparedAt = Instant.now(); }
+    public void markReady() { requireStatus(OrderStatus.PREPARING); status = OrderStatus.READY; readyAt = Instant.now(); }
+    public void markOnTheWay() { requireStatus(OrderStatus.READY); if (deliveryType != DeliveryType.DELIVERY) throw new DomainException("pickup orders cannot be marked on the way"); status = OrderStatus.ON_THE_WAY; }
+    public void deliver() {
+        if (status != OrderStatus.READY && status != OrderStatus.ON_THE_WAY) throw new DomainException("order cannot be delivered from status " + status);
+        status = OrderStatus.DELIVERED; deliveredAt = Instant.now();
+    }
+    public void cancel() { if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED) throw new DomainException("completed orders cannot be cancelled"); status = OrderStatus.CANCELLED; cancelledAt = Instant.now(); }
+    private void requireStatus(OrderStatus expected) { if (status != expected) throw new DomainException("expected order status " + expected + " but was " + status); }
     @AssertTrue(message = "delivery address is required for delivery orders")
     public boolean isDeliveryAddressValid() { return deliveryType != DeliveryType.DELIVERY || (deliveryAddressSnapshot != null && !deliveryAddressSnapshot.isBlank()); }
     @AssertTrue(message = "order totals are inconsistent")
@@ -48,4 +59,6 @@ public class CustomerOrder extends AuditableEntity {
     public Long getId() { return id; } public String getPublicNumber() { return publicNumber; } public OrderStatus getStatus() { return status; }
     public BigDecimal getSubtotal() { return subtotal; } public BigDecimal getTotal() { return total; } public List<OrderItem> getItems() { return List.copyOf(items); }
     public String getCustomerNameSnapshot() { return customerNameSnapshot; }
+    public Instant getConfirmedAt() { return confirmedAt; } public Instant getPreparedAt() { return preparedAt; }
+    public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
 }
