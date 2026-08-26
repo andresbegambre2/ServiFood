@@ -34,6 +34,32 @@ El carrito se limpia únicamente después de una creación exitosa. Si cambia un
 
 La búsqueda se ejecuta en el navegador sobre el catálogo público ya cargado. Para el volumen actual evita nuevas solicitudes en cada tecla y ofrece respuesta inmediata; si el catálogo crece, el contrato podrá evolucionar a búsqueda y paginación del lado del servidor.
 
+## Panel administrativo
+
+El equipo interno dispone de un panel responsive independiente del storefront:
+
+- login y logout con sesión segura, contraseñas BCrypt y protección CSRF;
+- dashboard operativo con ventas, pedidos, ticket promedio, pagos por revisar y productos destacados;
+- filtros, detalle, timeline y transiciones controladas de pedidos;
+- revisión de transferencias y acceso protegido a comprobantes;
+- administración de productos, imágenes, categorías y promociones mediante desactivación segura;
+- configuración de datos públicos, transferencias, QR y horarios del negocio;
+- estados de carga, vacío, error, sesión expirada y acceso restringido.
+
+| Ruta | Acceso |
+| --- | --- |
+| `/admin/login` | Usuarios internos |
+| `/admin` | Dashboard para ADMIN y CASHIER |
+| `/admin/orders` | Gestión de pedidos |
+| `/admin/orders/:publicNumber` | Detalle, pago y cambio de estado |
+| `/admin/payments` | Cola de revisión de pagos |
+| `/admin/products` | Consulta para CASHIER; administración para ADMIN |
+| `/admin/categories` | ADMIN |
+| `/admin/promotions` | ADMIN |
+| `/admin/settings` | ADMIN |
+
+El rol `ADMIN` tiene acceso completo; `CASHIER` opera pedidos y pagos y consulta productos; `KITCHEN` no puede entrar todavía al panel general. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
+
 ## API pública
 
 La API pública usa DTOs y se encuentra bajo `/api/v1/public`:
@@ -110,6 +136,8 @@ Variables nuevas:
 | `ALLOW_ORDERS_WHEN_CLOSED` | Excepción explícita para pruebas locales; predeterminado `false` |
 | `RECEIPTS_DIRECTORY` | Directorio privado y configurable para comprobantes |
 | `RECEIPTS_MAX_BYTES` | Tamaño máximo del archivo; predeterminado 5 MiB |
+| `IMAGES_DIRECTORY` | Directorio configurable de imágenes administradas |
+| `IMAGES_MAX_BYTES` | Tamaño máximo para imágenes; predeterminado 5 MiB |
 
 ## Carrito y dinero
 
@@ -129,7 +157,7 @@ npm run test
 npm run build
 ```
 
-Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento y horario cerrado. Las pruebas del frontend cubren carrito y reglas de checkout.
+Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos y operaciones administrativas. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros y manejo de sesión.
 
 El workflow `.github/workflows/ci.yml` ejecuta en Pull Requests a `main` y pushes relevantes: suite backend con Java 21, instalación reproducible, lint, tests y build frontend con Node 22, además de verificación de espacios en los cambios. CI usa H2 y no requiere secretos.
 
