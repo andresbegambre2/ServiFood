@@ -1,7 +1,7 @@
 export type AdminRole = 'ADMIN' | 'CASHIER' | 'KITCHEN'
 export type OrderStatus = 'NEW' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'ON_THE_WAY' | 'DELIVERED' | 'CANCELLED'
 export type PaymentStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED'
-export type PaymentMethod = 'CASH' | 'TRANSFER'
+export type PaymentMethod = 'CASH' | 'TRANSFER' | 'PAY_ON_PICKUP'
 export type DeliveryType = 'DELIVERY' | 'PICKUP'
 
 export interface AdminUser { id: number; name: string; email: string; role: AdminRole }

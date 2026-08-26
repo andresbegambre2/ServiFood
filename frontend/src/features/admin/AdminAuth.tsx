@@ -11,11 +11,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   async function refresh() {
     setLoading(true)
     try { setUser(await adminRequest<AdminUser>('/auth/session')); setMessage(undefined) }
-    catch (error) { setUser(undefined); if (error instanceof ApiError && error.status !== 401) setMessage(error.message) }
+    catch (error) { setUser(undefined); setMessage(error instanceof ApiError && error.status !== 401 ? error.message : undefined) }
     finally { setLoading(false) }
   }
   useEffect(() => {
-    adminRequest<AdminUser>('/auth/session').then(value => { setUser(value); setMessage(undefined) }).catch(error => { setUser(undefined); if (error instanceof ApiError && error.status !== 401) setMessage(error.message) }).finally(() => setLoading(false))
+    adminRequest<AdminUser>('/auth/session').then(value => { setUser(value); setMessage(undefined) }).catch(error => { setUser(undefined); setMessage(error instanceof ApiError && error.status !== 401 ? error.message : undefined) }).finally(() => setLoading(false))
   }, [])
   useEffect(() => {
     const expired = () => { setUser(undefined); setMessage('Tu sesión expiró. Inicia sesión nuevamente.') }

@@ -6,6 +6,7 @@ import { AdminLayout, RequireAdmin } from '../../layouts/AdminLayout'
 import { AdminLoginPage } from '../../pages/AdminLoginPage'
 import { AdminDashboardPage } from '../../pages/AdminDashboardPage'
 import { AdminOrdersPage } from '../../pages/AdminOrdersPage'
+import { label } from '../../pages/adminFormat'
 
 const actions = { login: async () => undefined, logout: async () => undefined, refresh: async () => undefined }
 const state = (overrides: Partial<AdminAuthState> = {}): AdminAuthState => ({ loading: false, ...actions, ...overrides })
@@ -18,6 +19,7 @@ describe('administrative routes', () => {
     const html = renderRoute(state(), '/admin/login', <AdminDashboardPage />)
     expect(html).toContain('Bienvenido de vuelta')
     expect(html).toContain('Acceso exclusivo para personal autorizado')
+    expect(html).not.toContain('sesión expiró')
   })
 
   it('blocks the kitchen role from the general administration panel', () => {
@@ -41,5 +43,9 @@ describe('administrative routes', () => {
     const orders = renderRoute(admin, '/admin/orders', <AdminOrdersPage />)
     expect(orders).toContain('Buscar pedido o cliente')
     expect(orders).toContain('Cargando pedidos')
+  })
+
+  it('uses the backend payment method contract for pickup orders', () => {
+    expect(label('PAY_ON_PICKUP')).toBe('Pago al recoger')
   })
 })
