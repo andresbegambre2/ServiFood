@@ -42,6 +42,7 @@ export function adminJson<T>(path: string, method: 'POST' | 'PUT' | 'PATCH', bod
 export async function login(email: string, password: string) {
   const body = new URLSearchParams({ username: email, password })
   await adminRequest<void>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+  csrf = undefined
 }
 
 export async function logout() { await adminRequest<void>('/auth/logout', { method: 'POST' }); csrf = undefined }
