@@ -28,6 +28,6 @@ class PublicStatusControllerTest {
     @Test
     void deniesUnconfiguredRoutes() throws Exception {
         mockMvc.perform(get("/api/private"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
