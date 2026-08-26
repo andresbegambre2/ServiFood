@@ -26,6 +26,10 @@ public class Product extends AuditableEntity {
         this.name = name; this.slug = slug; this.description = description; this.price = price; this.category = category;
     }
     public void allowExtra(Extra extra) { allowedExtras.add(extra); }
+    public void update(String name, String slug, String description, BigDecimal price, Category category, boolean available, boolean featured, Set<Extra> extras) {
+        this.name = name; this.slug = slug; this.description = description; this.price = price; this.category = category;
+        this.available = available; this.featured = featured; this.allowedExtras.clear(); this.allowedExtras.addAll(extras);
+    }
     public void changePrice(BigDecimal newPrice) { this.price = newPrice; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }
     public void markFeatured() { this.featured = true; }
@@ -35,4 +39,5 @@ public class Product extends AuditableEntity {
     public Set<Extra> getAllowedExtras() { return Set.copyOf(allowedExtras); }
     public boolean isAvailable() { return available; } public boolean isFeatured() { return featured; }
     public void markUnavailable() { available = false; }
+    public void setAvailable(boolean available) { this.available = available; }
 }

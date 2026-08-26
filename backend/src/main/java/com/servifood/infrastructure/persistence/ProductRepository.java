@@ -9,4 +9,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @EntityGraph(attributePaths = "category") List<Product> findByAvailableTrueOrderByFeaturedDescNameAsc();
     @EntityGraph(attributePaths = "category") List<Product> findByAvailableTrueAndFeaturedTrueOrderByNameAsc();
     Optional<Product> findBySlug(String slug);
+    @EntityGraph(attributePaths = {"category", "allowedExtras"}) List<Product> findAllByOrderByNameAsc();
 }

@@ -32,8 +32,10 @@ public class CustomerOrder extends AuditableEntity {
     @Column(name = "confirmed_at") private Instant confirmedAt;
     @Column(name = "prepared_at") private Instant preparedAt;
     @Column(name = "ready_at") private Instant readyAt;
+    @Column(name = "on_the_way_at") private Instant onTheWayAt;
     @Column(name = "delivered_at") private Instant deliveredAt;
     @Column(name = "cancelled_at") private Instant cancelledAt;
+    @Size(max = 500) @Column(name = "cancellation_reason", length = 500) private String cancellationReason;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true) private List<@Valid OrderItem> items = new ArrayList<>();
     protected CustomerOrder() {}
     public CustomerOrder(String publicNumber, Customer customer, String customerName, String customerPhone, DeliveryType deliveryType, String deliveryAddress, BigDecimal deliveryFee) {
@@ -53,12 +55,15 @@ public class CustomerOrder extends AuditableEntity {
     public void confirm() { requireStatus(OrderStatus.NEW); status = OrderStatus.CONFIRMED; confirmedAt = Instant.now(); }
     public void startPreparation() { requireStatus(OrderStatus.CONFIRMED); status = OrderStatus.PREPARING; preparedAt = Instant.now(); }
     public void markReady() { requireStatus(OrderStatus.PREPARING); status = OrderStatus.READY; readyAt = Instant.now(); }
-    public void markOnTheWay() { requireStatus(OrderStatus.READY); if (deliveryType != DeliveryType.DELIVERY) throw new DomainException("pickup orders cannot be marked on the way"); status = OrderStatus.ON_THE_WAY; }
+    public void markOnTheWay() { requireStatus(OrderStatus.READY); if (deliveryType != DeliveryType.DELIVERY) throw new DomainException("pickup orders cannot be marked on the way"); status = OrderStatus.ON_THE_WAY; onTheWayAt = Instant.now(); }
     public void deliver() {
-        if (status != OrderStatus.READY && status != OrderStatus.ON_THE_WAY) throw new DomainException("order cannot be delivered from status " + status);
+        boolean validPickup = deliveryType == DeliveryType.PICKUP && status == OrderStatus.READY;
+        boolean validDelivery = deliveryType == DeliveryType.DELIVERY && status == OrderStatus.ON_THE_WAY;
+        if (!validPickup && !validDelivery) throw new DomainException("order cannot be delivered from status " + status);
         status = OrderStatus.DELIVERED; deliveredAt = Instant.now();
     }
-    public void cancel() { if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED) throw new DomainException("completed orders cannot be cancelled"); status = OrderStatus.CANCELLED; cancelledAt = Instant.now(); }
+    public void cancel(String reason) { if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED) throw new DomainException("completed orders cannot be cancelled"); if (reason == null || reason.isBlank()) throw new DomainException("cancellation reason is required"); status = OrderStatus.CANCELLED; cancelledAt = Instant.now(); cancellationReason = reason.trim(); }
+    public void cancel() { cancel("Cancelado por el restaurante"); }
     private void requireStatus(OrderStatus expected) { if (status != expected) throw new DomainException("expected order status " + expected + " but was " + status); }
     @AssertTrue(message = "delivery address is required for delivery orders")
     public boolean isDeliveryAddressValid() { return deliveryType != DeliveryType.DELIVERY || (deliveryAddressSnapshot != null && !deliveryAddressSnapshot.isBlank()); }
@@ -73,4 +78,5 @@ public class CustomerOrder extends AuditableEntity {
     public String getClientRequestId() { return clientRequestId; } public String getTrackingTokenHash() { return trackingTokenHash; }
     public Instant getConfirmedAt() { return confirmedAt; } public Instant getPreparedAt() { return preparedAt; }
     public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
+    public Instant getOnTheWayAt() { return onTheWayAt; } public String getCancellationReason() { return cancellationReason; }
 }

@@ -27,5 +27,10 @@ public class Promotion extends AuditableEntity {
     public String getName() { return name; } public String getDescription() { return description; }
     public DiscountType getDiscountType() { return discountType; } public Instant getStartsAt() { return startsAt; } public Instant getEndsAt() { return endsAt; }
     public BigDecimal getMinimumPurchase() { return minimumPurchase; } public boolean isActive() { return active; }
+    public Integer getUsageLimit() { return usageLimit; }
     public void deactivate() { active = false; }
+    public void update(String name, String description, DiscountType type, BigDecimal value, Instant startsAt, Instant endsAt, BigDecimal minimumPurchase, Integer usageLimit, boolean active) {
+        this.name = name; this.description = description; this.discountType = type; this.discountValue = value; this.startsAt = startsAt; this.endsAt = endsAt;
+        this.minimumPurchase = minimumPurchase; this.usageLimit = usageLimit; this.active = active;
+    }
 }

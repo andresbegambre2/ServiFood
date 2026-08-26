@@ -21,3 +21,5 @@ app:
   uploads:
     receipts-directory: ${java.io.tmpdir}/servifood-test-receipts
     receipts-max-bytes: 5242880
+    images-directory: ${java.io.tmpdir}/servifood-test-images
+    images-max-bytes: 5242880

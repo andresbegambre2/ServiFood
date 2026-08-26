@@ -27,5 +27,7 @@ public class Payment extends AuditableEntity {
     public void reject(InternalUser reviewer, String reason) { status = PaymentStatus.REJECTED; reviewedBy = reviewer; reviewedAt = Instant.now(); rejectionReason = reason; }
     public Long getId() { return id; } public PaymentMethod getMethod() { return method; } public PaymentStatus getStatus() { return status; }
     public BigDecimal getAmount() { return amount; } public BigDecimal getCashTendered() { return cashTendered; } public String getReceiptPath() { return receiptPath; }
+    public CustomerOrder getOrder() { return order; } public String getRejectionReason() { return rejectionReason; }
+    public InternalUser getReviewedBy() { return reviewedBy; } public Instant getReviewedAt() { return reviewedAt; }
     @AssertTrue(message = "rejected payments require a reason") public boolean isRejectionValid() { return status != PaymentStatus.REJECTED || (rejectionReason != null && !rejectionReason.isBlank()); }
 }

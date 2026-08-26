@@ -57,6 +57,22 @@ public class LocalReceiptStorage implements ReceiptStorage {
         catch (IOException ignored) { }
     }
 
+    @Override
+    public StoredFile read(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) throw new CheckoutException(HttpStatus.NOT_FOUND, "RECEIPT_NOT_FOUND", "Comprobante no encontrado.");
+        Path target = baseDirectory.resolve(storedPath).normalize();
+        if (!target.startsWith(baseDirectory) || !Files.isRegularFile(target)) throw new CheckoutException(HttpStatus.NOT_FOUND, "RECEIPT_NOT_FOUND", "Comprobante no encontrado.");
+        try { return new StoredFile(Files.readAllBytes(target), contentType(storedPath)); }
+        catch (IOException exception) { throw new CheckoutException(HttpStatus.INTERNAL_SERVER_ERROR, "RECEIPT_STORAGE_ERROR", "No pudimos leer el comprobante."); }
+    }
+
+    private String contentType(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "image/jpeg";
+    }
+
     private boolean hasMatchingExtension(String name, String expected) {
         if (name == null) return false; String lower = name.toLowerCase(Locale.ROOT);
         return lower.endsWith("." + expected) || (expected.equals("jpg") && lower.endsWith(".jpeg"));

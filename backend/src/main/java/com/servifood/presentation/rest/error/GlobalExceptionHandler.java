@@ -9,6 +9,7 @@ import com.servifood.domain.exception.ResourceNotFoundException;
 import com.servifood.domain.exception.DomainException;
 import com.servifood.application.CheckoutException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -30,6 +31,8 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = detail(HttpStatus.PAYLOAD_TOO_LARGE, "Receipt is too large", "El comprobante supera el tamaño máximo permitido.");
         problem.setProperty("code", "INVALID_RECEIPT"); return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(problem);
     }
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<ProblemDetail> conflict(DataIntegrityViolationException exception) { return problem(HttpStatus.CONFLICT, "Conflict", "El registro entra en conflicto con datos existentes."); }
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail) {
         ProblemDetail problem = detail(status, title, detail);
         return ResponseEntity.status(status).body(problem);

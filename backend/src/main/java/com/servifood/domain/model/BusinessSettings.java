@@ -34,6 +34,10 @@ public class BusinessSettings extends AuditableEntity {
         this.timeZone = timeZone; this.transferProvider = transferProvider; this.transferAccountHolder = accountHolder;
         this.transferAccountReference = accountReference; this.paymentQrPath = qrPath;
     }
+    public void updatePublicDetails(String tradeName, String description, String phone, String whatsapp, String address, String instagram, String facebook, BigDecimal deliveryFee, int preparationMinutes) {
+        this.tradeName = tradeName; this.description = description; this.phone = phone; this.whatsapp = whatsapp; this.address = address;
+        this.instagram = instagram; this.facebook = facebook; this.baseDeliveryFee = deliveryFee; this.estimatedPreparationMinutes = preparationMinutes;
+    }
     public Long getId() { return id; } public String getTradeName() { return tradeName; }
     public BigDecimal getBaseDeliveryFee() { return baseDeliveryFee; } public String getCurrency() { return currency; }
     public String getDescription() { return description; } public String getLogoPath() { return logoPath; }
