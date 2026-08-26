@@ -18,5 +18,5 @@ public class OrderItemExtra {
     public OrderItemExtra(Extra extra, int quantity) { this.extra = extra; this.extraNameSnapshot = extra.getName(); this.unitPriceSnapshot = extra.getPrice(); this.quantity = quantity; this.subtotal = unitPriceSnapshot.multiply(BigDecimal.valueOf(quantity)); }
     void assignTo(OrderItem orderItem) { this.orderItem = orderItem; }
     public String getExtraNameSnapshot() { return extraNameSnapshot; } public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; }
-    public BigDecimal getSubtotal() { return subtotal; }
+    public int getQuantity() { return quantity; } public BigDecimal getSubtotal() { return subtotal; }
 }

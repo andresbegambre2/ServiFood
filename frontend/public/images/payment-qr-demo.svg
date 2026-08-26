@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+  <title id="title">QR demostrativo de transferencia</title>
+  <desc id="desc">Imagen demostrativa. Reemplazar por el código configurado por el restaurante.</desc>
+  <rect width="320" height="320" rx="28" fill="#f4f0e6"/>
+  <g fill="#10110e">
+    <path d="M28 28h88v88H28zm18 18v52h52V46zM204 28h88v88h-88zm18 18v52h52V46zM28 204h88v88H28zm18 18v52h52v-52z"/>
+    <path d="M62 62h20v20H62zm176 0h20v20h-20zM62 238h20v20H62zm82-206h20v36h-20zm34 0h16v20h-16zm-50 54h28v20h-28zm42-16h20v40h-20zm-38 56h22v22h-22zm38 0h56v18h-56zm74 0h48v22h-48zm-116 40h20v52h-20zm36-16h20v20h-20zm38 0h24v48h-24zm40 0h56v20h-56zm-78 64h22v22h-22zm42-18h20v38h-20zm40-8h22v22h-22zm38-8h54v20h-54zm-92 62h20v40h-20zm38 4h58v20h-58zm78-18h20v54h-20zm-94 74h22v22h-22zm42-18h20v40h-20zm40 16h50v20h-50z"/>
+  </g>
+  <rect x="82" y="139" width="156" height="42" rx="21" fill="#baff1a"/>
+  <text x="160" y="158" text-anchor="middle" dominant-baseline="middle" font-family="Arial,sans-serif" font-size="14" font-weight="800" fill="#10110e">PAGO DEMO</text>
+</svg>

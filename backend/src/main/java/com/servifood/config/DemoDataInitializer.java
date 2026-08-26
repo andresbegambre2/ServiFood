@@ -40,7 +40,10 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     @Override @Transactional
     public void run(ApplicationArguments args) {
-        if (categories.count() > 0) return;
+        if (categories.count() > 0) {
+            enrichExistingDemoSettings();
+            return;
+        }
         List<Category> categoryList = categories.saveAll(List.of(
                 new Category("Hamburguesas", "hamburguesas", 1), new Category("Combos", "combos", 2),
                 new Category("Acompañamientos", "acompanamientos", 3), new Category("Bebidas", "bebidas", 4),
@@ -68,13 +71,23 @@ public class DemoDataInitializer implements ApplicationRunner {
                 product("Cheesecake de maracuyá", "cheesecake-maracuya", "Cremoso, fresco y ligeramente ácido.", "12000", desserts)));
         users.save(new InternalUser("Administrador Demo", "admin@servifood.local", passwordEncoder.encode(demoPassword), UserRole.ADMIN));
         BusinessSettings demoSettings = new BusinessSettings("Distrito Smash", "Fuego, barrio y hamburguesas hechas sin atajos.", "+57 300 555 0147", "+57 300 555 0147", "Carrera 13 # 74-21, Bogotá", money("5000"), 25, "COP");
-        demoSettings.setSocialLinks("https://instagram.com/distritosmash", "https://facebook.com/distritosmash"); settings.save(demoSettings);
+        demoSettings.setSocialLinks("https://instagram.com/distritosmash", "https://facebook.com/distritosmash");
+        demoSettings.configureCheckout("America/Bogota", "Nequi", "Distrito Smash Demo", "300 555 0147", "/images/payment-qr-demo.svg");
+        settings.save(demoSettings);
         Promotion promotion = new Promotion("Doble noche", DiscountType.PERCENTAGE, money("15"), Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(30, ChronoUnit.DAYS), money("30000"));
         promotion.setDescription("15% de descuento en pedidos desde $30.000. Solo por tiempo limitado."); promotions.save(promotion);
         for (DayOfWeek day : DayOfWeek.values()) {
             boolean closed = day == DayOfWeek.MONDAY;
             hours.save(new BusinessHours(day, 1, closed ? null : LocalTime.of(12, 0), closed ? null : LocalTime.of(22, 0), closed));
         }
+    }
+
+    private void enrichExistingDemoSettings() {
+        settings.findFirstByOrderByIdAsc().ifPresent(current -> {
+            if (current.getTransferProvider() == null || current.getTransferProvider().isBlank()) {
+                current.configureCheckout("America/Bogota", "Nequi", "Distrito Smash Demo", "300 555 0147", "/images/payment-qr-demo.svg");
+            }
+        });
     }
 
     private Product product(String name, String slug, String description, String price, Category category, Extra... allowed) {

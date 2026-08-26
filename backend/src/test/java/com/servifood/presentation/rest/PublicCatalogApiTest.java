@@ -72,6 +72,9 @@ class PublicCatalogApiTest {
         mockMvc.perform(get("/api/v1/public/business")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.tradeName").value("Distrito Test"))
                 .andExpect(jsonPath("$.currency").value("COP"))
+                .andExpect(jsonPath("$.timeZone").value("America/Bogota"))
+                .andExpect(jsonPath("$.transfer.configured").value(false))
+                .andExpect(jsonPath("$.transfer.provider").value(nullValue()))
                 .andExpect(jsonPath("$.hours[0].dayOfWeek").value("TUESDAY"))
                 .andExpect(content().string(not(containsString("password"))));
     }

@@ -29,4 +29,5 @@ public class OrderItem {
     public Long getId() { return id; } public String getProductNameSnapshot() { return productNameSnapshot; }
     public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; } public int getQuantity() { return quantity; }
     public BigDecimal getSubtotal() { return subtotal; } public List<OrderItemExtra> getExtras() { return List.copyOf(extras); }
+    public String getNotes() { return notes; }
 }
