@@ -16,6 +16,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 import com.servifood.application.AdminOrderService;
 import com.servifood.domain.model.*;
@@ -23,23 +25,33 @@ import com.servifood.infrastructure.persistence.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class InventoryApiTest {
     @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired PasswordEncoder passwords; @Autowired AdminOrderService orderService;
     @Autowired InternalUserRepository users; @Autowired CategoryRepository categories; @Autowired ProductRepository products; @Autowired ExtraRepository extras;
     @Autowired IngredientRepository ingredients; @Autowired ProductRecipeRepository productRecipes; @Autowired ExtraRecipeRepository extraRecipes;
     @Autowired CustomerOrderRepository orders; @Autowired InventoryMovementRepository movements;
-    Product product; Extra extra; Ingredient ingredient; String suffix;
+    Product product; Extra extra; Ingredient ingredient; Category category; String suffix; boolean persistent;
 
     @BeforeEach
     void setUp() {
         suffix = UUID.randomUUID().toString().substring(0, 8);
         users.save(new InternalUser("Admin Inventory " + suffix, "admin-inventory-" + suffix + "@servifood.local", passwords.encode("test-password"), UserRole.ADMIN));
-        Category category = categories.save(new Category("Inventory " + suffix, "inventory-" + suffix, 1));
+        category = categories.save(new Category("Inventory " + suffix, "inventory-" + suffix, 1));
         extra = extras.save(new Extra("Extra inventory " + suffix, money("1000")));
         product = new Product("Producto inventory " + suffix, "producto-inventory-" + suffix, "Prueba de receta", money("10000"), category); product.allowExtra(extra); product = products.save(product);
         ingredient = ingredients.save(new Ingredient("Ingrediente " + suffix, IngredientUnit.GRAM, amount("10"), amount("4"), new BigDecimal("2.5000")));
         productRecipes.save(new ProductRecipeIngredient(product, ingredient, amount("2")));
         extraRecipes.save(new ExtraRecipeIngredient(extra, ingredient, amount("1")));
+    }
+
+    @AfterEach
+    void cleanPersistentConcurrencyData() {
+        if (!persistent) return;
+        CustomerOrder savedOrder = orders.findAllByOrderByCreatedAtDesc().stream().filter(value -> value.getPublicNumber().startsWith("SF-INV-")).findFirst().orElse(null);
+        if (savedOrder != null) { movements.deleteAll(movements.findByOrderIdAndTypeOrderByIngredientIdAsc(savedOrder.getId(), InventoryMovementType.CONSUMPTION)); movements.deleteAll(movements.findByOrderIdAndTypeOrderByIngredientIdAsc(savedOrder.getId(), InventoryMovementType.REVERSAL)); orders.delete(savedOrder); }
+        productRecipes.deleteAll(productRecipes.findByProductIdOrderByIngredientNameAsc(product.getId())); extraRecipes.deleteAll(extraRecipes.findByExtraIdOrderByIngredientNameAsc(extra.getId()));
+        products.delete(product); extras.delete(extra); ingredients.deleteById(ingredient.getId()); categories.delete(category); users.findByEmailIgnoreCase(adminEmail()).ifPresent(users::delete);
     }
 
     @Test
@@ -73,7 +85,9 @@ class InventoryApiTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void serializesConcurrentPreparationAndNeverDoubleConsumes() throws Exception {
+        persistent = true;
         CustomerOrder order = order(1, false); order.confirm(); orders.saveAndFlush(order);
         ExecutorService executor = Executors.newFixedThreadPool(2); CountDownLatch ready = new CountDownLatch(2); CountDownLatch start = new CountDownLatch(1); AtomicInteger success = new AtomicInteger();
         Callable<Void> task = () -> { ready.countDown(); start.await(5, TimeUnit.SECONDS); try { orderService.changeStatus(order.getPublicNumber(), OrderStatus.PREPARING, null); success.incrementAndGet(); } catch (RuntimeException expected) { /* one transition must lose */ } return null; };
