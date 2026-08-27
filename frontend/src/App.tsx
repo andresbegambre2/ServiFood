@@ -20,10 +20,11 @@ import { AdminProductsPage } from './pages/AdminProductsPage'
 import { AdminCategoriesPage } from './pages/AdminCategoriesPage'
 import { AdminPromotionsPage } from './pages/AdminPromotionsPage'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
+import { AdminInventoryPage } from './pages/AdminInventoryPage'
 import './styles/storefront.css'
 import './styles/admin.css'
 
 export default function App() { return <BrowserRouter><Routes>
-  <Route path="admin/*" element={<AdminAuthProvider><Routes><Route path="login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route index element={<AdminDashboardPage />} /><Route path="orders" element={<AdminOrdersPage />} /><Route path="orders/:publicNumber" element={<AdminOrderDetailPage />} /><Route path="payments" element={<AdminPaymentsPage />} /><Route path="products" element={<AdminProductsPage />} /><Route path="categories" element={<AdminCategoriesPage />} /><Route path="promotions" element={<AdminPromotionsPage />} /><Route path="settings" element={<AdminSettingsPage />} /></Route></Route></Routes></AdminAuthProvider>} />
+  <Route path="admin/*" element={<AdminAuthProvider><Routes><Route path="login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route index element={<AdminDashboardPage />} /><Route path="orders" element={<AdminOrdersPage />} /><Route path="orders/:publicNumber" element={<AdminOrderDetailPage />} /><Route path="payments" element={<AdminPaymentsPage />} /><Route path="products" element={<AdminProductsPage />} /><Route path="inventory" element={<AdminInventoryPage />} /><Route path="categories" element={<AdminCategoriesPage />} /><Route path="promotions" element={<AdminPromotionsPage />} /><Route path="settings" element={<AdminSettingsPage />} /></Route></Route></Routes></AdminAuthProvider>} />
   <Route path="*" element={<StorefrontProvider><CartProvider><Routes><Route element={<PublicLayout />}><Route index element={<HomePage />} /><Route path="menu" element={<MenuPage />} /><Route path="menu/:slug" element={<ProductPage />} /><Route path="cart" element={<CartPage />} /><Route path="checkout" element={<CheckoutPage />} /><Route path="order/:publicNumber" element={<OrderConfirmationPage />} /><Route path="*" element={<NotFoundPage />} /></Route></Routes></CartProvider></StorefrontProvider>} />
 </Routes></BrowserRouter> }
