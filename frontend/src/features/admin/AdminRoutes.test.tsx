@@ -24,7 +24,8 @@ describe('administrative routes', () => {
 
   it('blocks the kitchen role from the general administration panel', () => {
     const html = renderRoute(state({ user: { id: 3, name: 'Cocina', email: 'kitchen@servifood.local', role: 'KITCHEN' } }), '/admin', <AdminDashboardPage />)
-    expect(html).toContain('Este panel aún no está disponible para Cocina')
+    expect(html).toContain('Este panel es exclusivo de Administración y Caja')
+    expect(html).toContain('Ir a Cocina')
     expect(html).not.toContain('Configuración')
   })
 

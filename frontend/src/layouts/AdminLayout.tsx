@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAdminAuth } from '../features/admin/admin-auth-context'
 
 const operational = [
@@ -11,7 +11,7 @@ export function RequireAdmin() {
   const location = useLocation()
   if (loading) return <main className="admin-centered"><div className="admin-loader" /><p>Verificando sesión…</p></main>
   if (!user) return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />
-  if (user.role === 'KITCHEN') return <main className="admin-centered"><p className="eyebrow">Acceso restringido</p><h1>Este panel aún no está disponible para Cocina</h1><p>La pantalla operativa de cocina se desarrollará en una fase posterior.</p></main>
+  if (user.role === 'KITCHEN') return <main className="admin-centered"><p className="eyebrow">Acceso restringido</p><h1>Este panel es exclusivo de Administración y Caja</h1><p>Tu espacio de trabajo está en el tablero operativo de cocina.</p><Link className="primary" to="/kitchen">Ir a Cocina</Link></main>
   return <Outlet />
 }
 
