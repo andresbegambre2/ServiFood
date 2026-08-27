@@ -54,11 +54,27 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 | `/admin/orders/:publicNumber` | Detalle, pago y cambio de estado |
 | `/admin/payments` | Cola de revisión de pagos |
 | `/admin/products` | Consulta para CASHIER; administración para ADMIN |
+| `/admin/inventory` | Consulta para CASHIER; inventario y recetas para ADMIN |
 | `/admin/categories` | ADMIN |
 | `/admin/promotions` | ADMIN |
 | `/admin/settings` | ADMIN |
 
 El rol `ADMIN` tiene acceso completo; `CASHIER` opera pedidos y pagos y consulta productos; `KITCHEN` no puede entrar todavía al panel general. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
+
+## Inventario y recetas
+
+El inventario registra ingredientes en gramos, mililitros o unidades, sus existencias, mínimo, costo opcional y estado. Las recetas de productos y extras definen el consumo autoritativo. Al pasar un pedido confirmado a `PREPARING`, el backend bloquea el pedido y los ingredientes en orden estable, valida las existencias y registra un único movimiento de consumo dentro de la misma transacción. Si el pedido se cancela después, repone exactamente las cantidades consumidas y registra movimientos de reversión.
+
+Los ajustes manuales requieren un motivo y quedan identificados como entrada o ajuste. La API nunca permite stock negativo. El catálogo público considera la receta y oculta productos o extras que no puedan prepararse. El perfil `dev` incluye ingredientes y recetas de Distrito Smash, además de un insumo bajo el mínimo para demostrar las alertas.
+
+| Método y ruta | Uso |
+| --- | --- |
+| `GET /api/v1/admin/inventory` | Resumen, ingredientes, recetas y últimos movimientos |
+| `POST /api/v1/admin/inventory/ingredients` | Crear ingrediente (ADMIN) |
+| `PUT /api/v1/admin/inventory/ingredients/{id}` | Actualizar datos y mínimo (ADMIN) |
+| `POST /api/v1/admin/inventory/ingredients/{id}/adjustments` | Registrar entrada o ajuste con motivo (ADMIN) |
+| `PUT /api/v1/admin/inventory/recipes/products/{id}` | Reemplazar receta de producto (ADMIN) |
+| `PUT /api/v1/admin/inventory/recipes/extras/{id}` | Reemplazar receta de extra (ADMIN) |
 
 ## API pública
 
@@ -157,7 +173,7 @@ npm run test
 npm run build
 ```
 
-Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos y operaciones administrativas. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros y manejo de sesión.
+Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos, operaciones administrativas e inventario concurrente. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros, manejo de sesión y administración de inventario y recetas.
 
 El workflow `.github/workflows/ci.yml` ejecuta en Pull Requests a `main` y pushes relevantes: suite backend con Java 21, instalación reproducible, lint, tests y build frontend con Node 22, además de verificación de espacios en los cambios. CI usa H2 y no requiere secretos.
 
