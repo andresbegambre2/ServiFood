@@ -18,16 +18,17 @@ public class PublicCatalogService {
     private final PromotionRepository promotions;
     private final BusinessSettingsRepository settings;
     private final BusinessHoursRepository hours;
+    private final InventoryAvailabilityService inventory;
 
     public PublicCatalogService(CategoryRepository categories, ProductRepository products, PromotionRepository promotions,
-            BusinessSettingsRepository settings, BusinessHoursRepository hours) {
-        this.categories = categories; this.products = products; this.promotions = promotions; this.settings = settings; this.hours = hours;
+            BusinessSettingsRepository settings, BusinessHoursRepository hours, InventoryAvailabilityService inventory) {
+        this.categories = categories; this.products = products; this.promotions = promotions; this.settings = settings; this.hours = hours; this.inventory = inventory;
     }
 
     public List<CategoryResponse> activeCategories() { return categories.findByActiveTrueOrderByDisplayOrderAsc().stream().map(this::category).toList(); }
-    public List<ProductSummaryResponse> availableProducts() { return products.findByAvailableTrueOrderByFeaturedDescNameAsc().stream().map(this::summary).toList(); }
-    public List<ProductSummaryResponse> featuredProducts() { return products.findByAvailableTrueAndFeaturedTrueOrderByNameAsc().stream().map(this::summary).toList(); }
-    public ProductDetailResponse productBySlug(String slug) { return detail(products.findBySlugAndAvailableTrue(slug).orElseThrow(() -> new ResourceNotFoundException("Product", slug))); }
+    public List<ProductSummaryResponse> availableProducts() { return products.findByAvailableTrueOrderByFeaturedDescNameAsc().stream().filter(inventory::canPrepare).map(this::summary).toList(); }
+    public List<ProductSummaryResponse> featuredProducts() { return products.findByAvailableTrueAndFeaturedTrueOrderByNameAsc().stream().filter(inventory::canPrepare).map(this::summary).toList(); }
+    public ProductDetailResponse productBySlug(String slug) { Product product = products.findBySlugAndAvailableTrue(slug).filter(inventory::canPrepare).orElseThrow(() -> new ResourceNotFoundException("Product", slug)); return detail(product); }
     public List<PromotionResponse> activePromotions() { Instant now = Instant.now(); return promotions.findByActiveTrueAndStartsAtLessThanEqualAndEndsAtGreaterThanEqualOrderByEndsAtAsc(now, now).stream().map(this::promotion).toList(); }
     public BusinessPublicResponse publicBusiness() {
         BusinessSettings business = settings.findFirstByOrderByIdAsc().orElseThrow(() -> new ResourceNotFoundException("Business settings", "default"));
@@ -41,7 +42,7 @@ public class PublicCatalogService {
 
     private CategoryResponse category(Category value) { return new CategoryResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription()); }
     private ProductSummaryResponse summary(Product value) { return new ProductSummaryResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), value.isAvailable(), value.isFeatured(), category(value.getCategory())); }
-    private ProductDetailResponse detail(Product value) { return new ProductDetailResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), value.isAvailable(), value.isFeatured(), category(value.getCategory()), value.getAllowedExtras().stream().filter(Extra::isAvailable).sorted(Comparator.comparing(Extra::getName)).map(extra -> new ExtraResponse(extra.getId(), extra.getName(), extra.getDescription(), extra.getPrice())).toList()); }
+    private ProductDetailResponse detail(Product value) { return new ProductDetailResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), true, value.isFeatured(), category(value.getCategory()), value.getAllowedExtras().stream().filter(inventory::canPrepare).sorted(Comparator.comparing(Extra::getName)).map(extra -> new ExtraResponse(extra.getId(), extra.getName(), extra.getDescription(), extra.getPrice())).toList()); }
     private PromotionResponse promotion(Promotion value) { return new PromotionResponse(value.getId(), value.getName(), value.getDescription(), value.getDiscountType(), value.getDiscountValue(), value.getStartsAt(), value.getEndsAt(), value.getMinimumPurchase()); }
     private BusinessHoursResponse schedule(BusinessHours value) { return new BusinessHoursResponse(value.getDayOfWeek(), value.getSlotNumber(), value.getOpensAt(), value.getClosesAt(), value.isClosed()); }
 }

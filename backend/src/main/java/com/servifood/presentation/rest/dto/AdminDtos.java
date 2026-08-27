@@ -13,7 +13,8 @@ public final class AdminDtos {
     private AdminDtos() {}
 
     public record Dashboard(BigDecimal salesToday, long ordersToday, long newOrders, long preparingOrders,
-            long paymentsUnderReview, BigDecimal averageTicket, List<OrderSummary> latestOrders, List<TopProduct> topProducts) {}
+            long paymentsUnderReview, long lowStockIngredients, long outOfStockIngredients,
+            BigDecimal averageTicket, List<OrderSummary> latestOrders, List<TopProduct> topProducts) {}
     public record TopProduct(String name, long quantity) {}
     public record OrderSummary(String publicNumber, String customerName, Instant createdAt, DeliveryType deliveryType,
             BigDecimal total, PaymentMethod paymentMethod, PaymentStatus paymentStatus, OrderStatus orderStatus) {}

@@ -46,24 +46,26 @@ public class PublicOrderService {
     private final Clock clock;
     private final boolean allowWhenClosed;
     private final byte[] trackingSecret;
+    private final InventoryAvailabilityService inventory;
 
     @Autowired
     public PublicOrderService(CustomerOrderRepository orders, CustomerRepository customers, ProductRepository products,
             PromotionRepository promotions, BusinessSettingsRepository settings, BusinessHoursRepository hours,
-            PaymentRepository payments, ReceiptStorage receipts,
+            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory,
             @Value("${app.orders.allow-when-closed:false}") boolean allowWhenClosed,
             @Value("${app.orders.tracking-secret}") String trackingSecret) {
-        this(orders, customers, products, promotions, settings, hours, payments, receipts, Clock.systemUTC(),
+        this(orders, customers, products, promotions, settings, hours, payments, receipts, inventory, Clock.systemUTC(),
                 allowWhenClosed, trackingSecret);
     }
 
     PublicOrderService(CustomerOrderRepository orders, CustomerRepository customers, ProductRepository products,
             PromotionRepository promotions, BusinessSettingsRepository settings, BusinessHoursRepository hours,
-            PaymentRepository payments, ReceiptStorage receipts, Clock clock, boolean allowWhenClosed, String trackingSecret) {
+            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory, Clock clock, boolean allowWhenClosed, String trackingSecret) {
         if (trackingSecret == null || trackingSecret.length() < 32) throw new IllegalArgumentException("tracking secret must contain at least 32 characters");
         this.orders = orders; this.customers = customers; this.products = products; this.promotions = promotions;
         this.settings = settings; this.hours = hours; this.payments = payments; this.receipts = receipts; this.clock = clock;
         this.allowWhenClosed = allowWhenClosed; this.trackingSecret = trackingSecret.getBytes(StandardCharsets.UTF_8);
+        this.inventory = inventory;
     }
 
     @Transactional(readOnly = true)
@@ -133,7 +135,7 @@ public class PublicOrderService {
         boolean priceChanged = false;
         for (OrderLineRequest line : requests) {
             Product product = products.findById(line.productId()).orElseThrow(() -> unavailable("PRODUCT_UNAVAILABLE", "Un producto ya no está disponible."));
-            if (!product.isAvailable()) throw unavailable("PRODUCT_UNAVAILABLE", product.getName() + " está agotado.");
+            if (!inventory.canPrepare(product)) throw unavailable("PRODUCT_UNAVAILABLE", product.getName() + " está agotado.");
             if (line.expectedUnitPrice() != null && money(line.expectedUnitPrice()).compareTo(money(product.getPrice())) != 0) priceChanged = true;
             OrderItem item = new OrderItem(product, line.quantity(), blankToNull(line.notes()));
             Set<Long> selected = new HashSet<>();
@@ -141,7 +143,7 @@ public class PublicOrderService {
                 if (!selected.add(requestedExtra.extraId())) throw new CheckoutException(HttpStatus.BAD_REQUEST, "DUPLICATE_EXTRA", "Un extra no puede repetirse en la misma línea.");
                 Extra extra = product.getAllowedExtras().stream().filter(value -> value.getId().equals(requestedExtra.extraId())).findFirst()
                         .orElseThrow(() -> unavailable("EXTRA_UNAVAILABLE", "Un extra ya no está permitido para " + product.getName() + "."));
-                if (!extra.isAvailable()) throw unavailable("EXTRA_UNAVAILABLE", extra.getName() + " ya no está disponible.");
+                if (!inventory.canPrepare(extra)) throw unavailable("EXTRA_UNAVAILABLE", extra.getName() + " ya no está disponible.");
                 if (requestedExtra.expectedUnitPrice() != null && money(requestedExtra.expectedUnitPrice()).compareTo(money(extra.getPrice())) != 0) priceChanged = true;
                 item.addExtra(new OrderItemExtra(extra, line.quantity()));
             }

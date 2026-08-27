@@ -35,6 +35,8 @@ public class CustomerOrder extends AuditableEntity {
     @Column(name = "on_the_way_at") private Instant onTheWayAt;
     @Column(name = "delivered_at") private Instant deliveredAt;
     @Column(name = "cancelled_at") private Instant cancelledAt;
+    @Column(name = "inventory_consumed_at") private Instant inventoryConsumedAt;
+    @Column(name = "inventory_reverted_at") private Instant inventoryRevertedAt;
     @Size(max = 500) @Column(name = "cancellation_reason", length = 500) private String cancellationReason;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true) private List<@Valid OrderItem> items = new ArrayList<>();
     protected CustomerOrder() {}
@@ -64,6 +66,8 @@ public class CustomerOrder extends AuditableEntity {
     }
     public void cancel(String reason) { if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELLED) throw new DomainException("completed orders cannot be cancelled"); if (reason == null || reason.isBlank()) throw new DomainException("cancellation reason is required"); status = OrderStatus.CANCELLED; cancelledAt = Instant.now(); cancellationReason = reason.trim(); }
     public void cancel() { cancel("Cancelado por el restaurante"); }
+    public void markInventoryConsumed() { if (inventoryConsumedAt == null) inventoryConsumedAt = Instant.now(); }
+    public void markInventoryReverted() { if (inventoryConsumedAt != null && inventoryRevertedAt == null) inventoryRevertedAt = Instant.now(); }
     private void requireStatus(OrderStatus expected) { if (status != expected) throw new DomainException("expected order status " + expected + " but was " + status); }
     @AssertTrue(message = "delivery address is required for delivery orders")
     public boolean isDeliveryAddressValid() { return deliveryType != DeliveryType.DELIVERY || (deliveryAddressSnapshot != null && !deliveryAddressSnapshot.isBlank()); }
@@ -79,4 +83,5 @@ public class CustomerOrder extends AuditableEntity {
     public Instant getConfirmedAt() { return confirmedAt; } public Instant getPreparedAt() { return preparedAt; }
     public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
     public Instant getOnTheWayAt() { return onTheWayAt; } public String getCancellationReason() { return cancellationReason; }
+    public Instant getInventoryConsumedAt() { return inventoryConsumedAt; } public Instant getInventoryRevertedAt() { return inventoryRevertedAt; }
 }
