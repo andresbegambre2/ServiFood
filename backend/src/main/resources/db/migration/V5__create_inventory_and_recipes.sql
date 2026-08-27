@@ -62,6 +62,7 @@ CREATE TABLE inventory_movements (
     CONSTRAINT fk_inventory_movement_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(id),
     CONSTRAINT fk_inventory_movement_order FOREIGN KEY (order_id) REFERENCES orders(id),
     CONSTRAINT fk_inventory_movement_user FOREIGN KEY (created_by) REFERENCES internal_users(id),
+    CONSTRAINT uk_inventory_order_ingredient_type UNIQUE (order_id, ingredient_id, movement_type),
     CONSTRAINT ck_inventory_movement_type CHECK (movement_type IN ('ENTRY','CONSUMPTION','ADJUSTMENT','REVERSAL')),
     CONSTRAINT ck_inventory_movement_delta CHECK (quantity_delta <> 0),
     CONSTRAINT ck_inventory_movement_balance CHECK (balance_after >= 0)

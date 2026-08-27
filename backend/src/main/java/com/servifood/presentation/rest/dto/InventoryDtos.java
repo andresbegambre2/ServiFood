@@ -21,8 +21,8 @@ public final class InventoryDtos {
     public record StockAdjustment(@NotNull InventoryMovementType type, @NotNull BigDecimal quantity,
             @NotBlank @Size(max = 500) String reason) {
         @AssertTrue(message = "Solo se permiten entradas o ajustes manuales") public boolean isManualType() { return type == InventoryMovementType.ENTRY || type == InventoryMovementType.ADJUSTMENT; }
-        @AssertTrue(message = "La cantidad de una entrada debe ser positiva") public boolean isEntryPositive() { return type != InventoryMovementType.ENTRY || quantity.signum() > 0; }
-        @AssertTrue(message = "La cantidad del ajuste no puede ser cero") public boolean isNotZero() { return quantity.signum() != 0; }
+        @AssertTrue(message = "La cantidad de una entrada debe ser positiva") public boolean isEntryPositive() { return quantity == null || type != InventoryMovementType.ENTRY || quantity.signum() > 0; }
+        @AssertTrue(message = "La cantidad del ajuste no puede ser cero") public boolean isNotZero() { return quantity == null || quantity.signum() != 0; }
     }
     public record RecipeLine(Long ingredientId, String ingredientName, IngredientUnit unit, BigDecimal quantity) {}
     public record RecipeView(Long targetId, String targetName, boolean effectiveAvailable, List<RecipeLine> ingredients) {}

@@ -17,7 +17,7 @@ public class Ingredient extends AuditableEntity {
     @Column(nullable = false) private boolean active = true;
     @Version private long version;
     protected Ingredient() {}
-    public Ingredient(String name, IngredientUnit unit, BigDecimal stockCurrent, BigDecimal stockMinimum, BigDecimal unitCost) { update(name, unit, stockMinimum, unitCost, true); this.stockCurrent = scale(stockCurrent); }
+    public Ingredient(String name, IngredientUnit unit, BigDecimal stockCurrent, BigDecimal stockMinimum, BigDecimal unitCost) { update(name, unit, stockMinimum, unitCost, true); this.stockCurrent = scale(stockCurrent); if (this.stockCurrent.signum() < 0) throw new DomainException("El stock inicial no puede ser negativo"); }
     public void update(String name, IngredientUnit unit, BigDecimal stockMinimum, BigDecimal unitCost, boolean active) { this.name = name.trim(); this.unit = unit; this.stockMinimum = scale(stockMinimum); this.unitCost = unitCost == null ? null : unitCost.setScale(4); this.active = active; }
     public void adjust(BigDecimal delta) { BigDecimal next = stockCurrent.add(scale(delta)); if (next.signum() < 0) throw new DomainException("Stock insuficiente para " + name); stockCurrent = next; }
     public boolean isLowStock() { return active && stockCurrent.signum() > 0 && stockCurrent.compareTo(stockMinimum) <= 0; }
