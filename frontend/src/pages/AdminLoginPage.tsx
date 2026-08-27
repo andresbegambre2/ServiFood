@@ -7,10 +7,10 @@ export function AdminLoginPage() {
   const { user, loading, login, message } = useAdminAuth()
   const navigate = useNavigate(); const location = useLocation()
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [sending, setSending] = useState(false)
-  if (!loading && user) return <Navigate to="/admin" replace />
+  if (!loading && user) return <Navigate to={user.role === 'KITCHEN' ? '/kitchen' : '/admin'} replace />
   async function submit(event: FormEvent) {
     event.preventDefault(); setSending(true); setError('')
-    try { await login(email, password); const from = (location.state as { from?: string } | null)?.from; navigate(from?.startsWith('/admin') ? from : '/admin', { replace: true }) }
+    try { const loggedUser = await login(email, password); const from = (location.state as { from?: string } | null)?.from; const destination = loggedUser.role === 'KITCHEN' ? '/kitchen' : from?.startsWith('/kitchen') || from?.startsWith('/admin') ? from : '/admin'; navigate(destination, { replace: true }) }
     catch (cause) { setError(cause instanceof ApiError && cause.status === 401 ? 'Correo o contraseña incorrectos.' : 'No pudimos iniciar sesión. Intenta de nuevo.') }
     finally { setSending(false) }
   }

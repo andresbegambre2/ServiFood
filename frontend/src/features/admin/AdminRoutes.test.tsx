@@ -8,7 +8,7 @@ import { AdminDashboardPage } from '../../pages/AdminDashboardPage'
 import { AdminOrdersPage } from '../../pages/AdminOrdersPage'
 import { label } from '../../pages/adminFormat'
 
-const actions = { login: async () => undefined, logout: async () => undefined, refresh: async () => undefined }
+const actions = { login: async () => ({ id: 1, name: 'Admin', email: 'admin@servifood.local', role: 'ADMIN' as const }), logout: async () => undefined, refresh: async () => undefined }
 const state = (overrides: Partial<AdminAuthState> = {}): AdminAuthState => ({ loading: false, ...actions, ...overrides })
 function renderRoute(value: AdminAuthState, path: string, page: React.ReactNode) {
   return renderToString(<MemoryRouter initialEntries={[path]}><AdminAuthContext.Provider value={value}><Routes><Route path="/admin/login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route path="/admin" element={page} /><Route path="/admin/orders" element={page} /></Route></Route></Routes></AdminAuthContext.Provider></MemoryRouter>)
@@ -24,7 +24,8 @@ describe('administrative routes', () => {
 
   it('blocks the kitchen role from the general administration panel', () => {
     const html = renderRoute(state({ user: { id: 3, name: 'Cocina', email: 'kitchen@servifood.local', role: 'KITCHEN' } }), '/admin', <AdminDashboardPage />)
-    expect(html).toContain('Este panel aún no está disponible para Cocina')
+    expect(html).toContain('Este panel es exclusivo de Administración y Caja')
+    expect(html).toContain('Ir a Cocina')
     expect(html).not.toContain('Configuración')
   })
 

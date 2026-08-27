@@ -18,10 +18,10 @@ async function csrfHeaders() {
   return { 'X-XSRF-TOKEN': csrf.token }
 }
 
-export async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function sessionRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method?.toUpperCase() ?? 'GET'
   const changing = !['GET', 'HEAD', 'OPTIONS'].includes(method)
-  const response = await fetch(`${API_URL}/admin${path}`, {
+  const response = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: 'include',
     headers: { Accept: 'application/json', ...(changing ? await csrfHeaders() : {}), ...init.headers },
@@ -33,6 +33,10 @@ export async function adminRequest<T>(path: string, init: RequestInit = {}): Pro
   }
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
+}
+
+export function adminRequest<T>(path: string, init: RequestInit = {}) {
+  return sessionRequest<T>(`/admin${path}`, init)
 }
 
 export function adminJson<T>(path: string, method: 'POST' | 'PUT' | 'PATCH', body: unknown) {

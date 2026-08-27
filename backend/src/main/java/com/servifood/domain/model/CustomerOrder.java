@@ -79,4 +79,5 @@ public class CustomerOrder extends AuditableEntity {
     public Instant getConfirmedAt() { return confirmedAt; } public Instant getPreparedAt() { return preparedAt; }
     public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
     public Instant getOnTheWayAt() { return onTheWayAt; } public String getCancellationReason() { return cancellationReason; }
+    public String getNotes() { return notes; }
 }
