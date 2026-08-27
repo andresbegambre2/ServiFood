@@ -28,14 +28,18 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final BusinessSettingsRepository settings;
     private final BusinessHoursRepository hours;
     private final PromotionRepository promotions;
+    private final IngredientRepository ingredients;
+    private final ProductRecipeRepository productRecipes;
+    private final ExtraRecipeRepository extraRecipes;
     private final PasswordEncoder passwordEncoder;
     private final String demoPassword;
 
     public DemoDataInitializer(CategoryRepository categories, ExtraRepository extras, ProductRepository products,
             InternalUserRepository users, BusinessSettingsRepository settings, BusinessHoursRepository hours, PromotionRepository promotions,
+            IngredientRepository ingredients, ProductRecipeRepository productRecipes, ExtraRecipeRepository extraRecipes,
             PasswordEncoder passwordEncoder, @Value("${app.demo.admin-password}") String demoPassword) {
         this.categories = categories; this.extras = extras; this.products = products; this.users = users;
-        this.settings = settings; this.hours = hours; this.promotions = promotions; this.passwordEncoder = passwordEncoder; this.demoPassword = demoPassword;
+        this.settings = settings; this.hours = hours; this.promotions = promotions; this.ingredients = ingredients; this.productRecipes = productRecipes; this.extraRecipes = extraRecipes; this.passwordEncoder = passwordEncoder; this.demoPassword = demoPassword;
     }
 
     @Override @Transactional
@@ -43,6 +47,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         ensureUsers();
         if (categories.count() > 0) {
             enrichExistingDemoSettings();
+            ensureDemoInventory();
             return;
         }
         List<Category> categoryList = categories.saveAll(List.of(
@@ -80,6 +85,7 @@ public class DemoDataInitializer implements ApplicationRunner {
             boolean closed = day == DayOfWeek.MONDAY;
             hours.save(new BusinessHours(day, 1, closed ? null : LocalTime.of(12, 0), closed ? null : LocalTime.of(22, 0), closed));
         }
+        ensureDemoInventory();
     }
 
     private void ensureUsers() {
@@ -99,6 +105,29 @@ public class DemoDataInitializer implements ApplicationRunner {
             }
         });
     }
+
+    private void ensureDemoInventory() {
+        Ingredient meat = ingredient("Carne de res", IngredientUnit.GRAM, "8000", "1000", "32");
+        Ingredient bread = ingredient("Pan brioche", IngredientUnit.UNIT, "80", "12", "1200");
+        Ingredient cheese = ingredient("Queso cheddar", IngredientUnit.GRAM, "5000", "800", "28");
+        Ingredient potatoes = ingredient("Papa rústica", IngredientUnit.GRAM, "10000", "1500", "6");
+        Ingredient bacon = ingredient("Tocineta", IngredientUnit.GRAM, "3000", "500", "35");
+        Ingredient sauce = ingredient("Salsa Distrito", IngredientUnit.MILLILITER, "4000", "600", "8");
+        Ingredient jalapeno = ingredient("Jalapeño", IngredientUnit.GRAM, "300", "500", "18");
+        productRecipe("clasica-urbana", new Object[][] {{meat, "150"}, {bread, "1"}, {cheese, "30"}, {sauce, "20"}});
+        productRecipe("doble-bacon", new Object[][] {{meat, "300"}, {bread, "1"}, {cheese, "50"}, {bacon, "30"}});
+        productRecipe("papas-distrito", new Object[][] {{potatoes, "250"}, {cheese, "40"}, {bacon, "30"}});
+        productRecipe("combo-callejero", new Object[][] {{meat, "150"}, {bread, "1"}, {cheese, "30"}, {potatoes, "250"}, {sauce, "20"}});
+        extraRecipe("Carne adicional", meat, "150"); extraRecipe("Cheddar", cheese, "30"); extraRecipe("Tocineta", bacon, "30");
+        extraRecipe("Salsa adicional", sauce, "20"); extraRecipe("Jalapeños", jalapeno, "20");
+    }
+
+    private Ingredient ingredient(String name, IngredientUnit unit, String current, String minimum, String cost) {
+        return ingredients.findByNameIgnoreCase(name).orElseGet(() -> ingredients.save(new Ingredient(name, unit, decimal(current), decimal(minimum), decimal(cost))));
+    }
+    private void productRecipe(String slug, Object[][] lines) { products.findBySlug(slug).ifPresent(product -> { if (productRecipes.findByProductIdOrderByIngredientNameAsc(product.getId()).isEmpty()) for (Object[] line : lines) productRecipes.save(new ProductRecipeIngredient(product, (Ingredient) line[0], decimal((String) line[1]))); }); }
+    private void extraRecipe(String name, Ingredient ingredient, String quantity) { extras.findAll().stream().filter(extra -> extra.getName().equals(name)).findFirst().ifPresent(extra -> { if (extraRecipes.findByExtraIdOrderByIngredientNameAsc(extra.getId()).isEmpty()) extraRecipes.save(new ExtraRecipeIngredient(extra, ingredient, decimal(quantity))); }); }
+    private BigDecimal decimal(String value) { return new BigDecimal(value).setScale(3); }
 
     private Product product(String name, String slug, String description, String price, Category category, Extra... allowed) {
         Product product = new Product(name, slug, description, money(price), category); for (Extra extra : allowed) product.allowExtra(extra); return product;

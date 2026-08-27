@@ -1,0 +1,69 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { adjustIngredient, createIngredient, getInventory, saveExtraRecipe, saveProductRecipe, updateIngredient } from '../api/inventory'
+import { useAdminAuth } from '../features/admin/admin-auth-context'
+import { formatStock, ingredientUnitLabels, inventoryMovementLabels, stockStatusLabels, upsertRecipeLine } from '../features/admin/inventory'
+import type { IngredientView, InventoryOverview, RecipeLine, RecipeView } from '../types/admin'
+import { AdminError, AdminLoading, EmptyState } from './adminUi'
+import { PageTitle } from './AdminDashboardPage'
+import { time } from './adminFormat'
+
+type InventoryTab = 'ingredients' | 'recipes' | 'movements'
+
+export function AdminInventoryPage() {
+  const { user } = useAdminAuth(); const editable = user?.role === 'ADMIN'
+  const [data, setData] = useState<InventoryOverview>(); const [error, setError] = useState(''); const [feedback, setFeedback] = useState('')
+  const [tab, setTab] = useState<InventoryTab>('ingredients'); const [editing, setEditing] = useState<IngredientView>(); const [ingredientOpen, setIngredientOpen] = useState(false); const [adjusting, setAdjusting] = useState<IngredientView>()
+  const [recipeKey, setRecipeKey] = useState(''); const [recipeLines, setRecipeLines] = useState<RecipeLine[]>([]); const [lineIngredient, setLineIngredient] = useState(''); const [lineQuantity, setLineQuantity] = useState('')
+  const [saving, setSaving] = useState(false)
+  const load = () => { setError(''); getInventory().then(setData).catch(() => setError('No pudimos cargar el inventario.')) }
+  useEffect(() => { getInventory().then(setData).catch(() => setError('No pudimos cargar el inventario.')) }, [])
+
+  async function ingredientSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const form = new FormData(event.currentTarget); setSaving(true); setError('')
+    const common = { name: String(form.get('name')), unit: String(form.get('unit')), stockMinimum: Number(form.get('stockMinimum')), unitCost: form.get('unitCost') ? Number(form.get('unitCost')) : null, active: form.get('active') === 'on' }
+    try { if (editing) await updateIngredient(editing.id, common); else await createIngredient({ ...common, initialStock: Number(form.get('initialStock')) }); setIngredientOpen(false); setEditing(undefined); setFeedback('Ingrediente guardado correctamente.'); load() }
+    catch { setError('No fue posible guardar el ingrediente. Revisa los datos.') } finally { setSaving(false) }
+  }
+
+  async function adjustmentSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!adjusting) return; const form = new FormData(event.currentTarget); setSaving(true); setError('')
+    try { await adjustIngredient(adjusting.id, { type: String(form.get('type')) as 'ENTRY' | 'ADJUSTMENT', quantity: Number(form.get('quantity')), reason: String(form.get('reason')) }); setAdjusting(undefined); setFeedback('Movimiento registrado correctamente.'); load() }
+    catch { setError('No se pudo aplicar el movimiento. El stock nunca puede quedar negativo.') } finally { setSaving(false) }
+  }
+
+  function chooseRecipe(value: string) {
+    setRecipeKey(value); const [kind, id] = value.split(':'); const recipes = kind === 'product' ? data?.productRecipes : data?.extraRecipes; setRecipeLines(recipes?.find(recipe => recipe.targetId === Number(id))?.ingredients ?? [])
+  }
+  function addLine() {
+    const ingredient = data?.ingredients.find(value => value.id === Number(lineIngredient)); const quantity = Number(lineQuantity)
+    if (!ingredient || quantity <= 0) return
+    setRecipeLines(lines => upsertRecipeLine(lines, { ingredientId: ingredient.id, ingredientName: ingredient.name, unit: ingredient.unit, quantity })); setLineIngredient(''); setLineQuantity('')
+  }
+  async function saveRecipe() {
+    if (!recipeKey) return; const [kind, id] = recipeKey.split(':'); setSaving(true); setError('')
+    try { const lines = recipeLines.map(line => ({ ingredientId: line.ingredientId, quantity: line.quantity })); if (kind === 'product') await saveProductRecipe(Number(id), lines); else await saveExtraRecipe(Number(id), lines); setFeedback('Receta actualizada correctamente.'); load() }
+    catch { setError('No fue posible guardar la receta.') } finally { setSaving(false) }
+  }
+
+  if (error && !data) return <AdminError message={error} retry={load} />
+  if (!data) return <AdminLoading label="Cargando inventario…" />
+  return <><PageTitle eyebrow="CONTROL DE INSUMOS" title="Inventario y recetas" action={editable ? <button className="primary" onClick={() => { setEditing(undefined); setIngredientOpen(true) }}>Nuevo ingrediente</button> : undefined} />
+    {!editable && <div className="admin-note">Tu rol permite consultar existencias, recetas y movimientos, pero no modificarlos.</div>}{error && <div className="admin-alert" role="alert">{error}</div>}{feedback && <div className="admin-success" role="status">{feedback}</div>}
+    <InventoryView data={data} editable={editable} tab={tab} onTab={setTab} onEdit={ingredient => { setEditing(ingredient); setIngredientOpen(true) }} onAdjust={setAdjusting} onRecipe={chooseRecipe} />
+    {tab === 'recipes' && editable && <section className="admin-panel recipe-editor"><div className="panel-title"><div><p className="eyebrow">EDITOR</p><h2>Gestionar receta</h2></div></div><label>Producto o extra<select value={recipeKey} onChange={event => chooseRecipe(event.target.value)}><option value="">Selecciona una receta</option><optgroup label="Productos">{data.productRecipes.map(recipe => <option value={`product:${recipe.targetId}`} key={`p-${recipe.targetId}`}>{recipe.targetName}</option>)}</optgroup><optgroup label="Extras">{data.extraRecipes.map(recipe => <option value={`extra:${recipe.targetId}`} key={`e-${recipe.targetId}`}>{recipe.targetName}</option>)}</optgroup></select></label>{recipeKey && <><div className="recipe-lines">{recipeLines.map(line => <div key={line.ingredientId}><span>{line.ingredientName}</span><strong>{formatStock(line.quantity, line.unit)}</strong><button className="text-danger" onClick={() => setRecipeLines(lines => lines.filter(value => value.ingredientId !== line.ingredientId))}>Quitar</button></div>)}</div><div className="recipe-add"><select aria-label="Ingrediente de receta" value={lineIngredient} onChange={event => setLineIngredient(event.target.value)}><option value="">Ingrediente</option>{data.ingredients.filter(value => value.active).map(ingredient => <option value={ingredient.id} key={ingredient.id}>{ingredient.name} ({ingredientUnitLabels[ingredient.unit]})</option>)}</select><input aria-label="Cantidad de receta" type="number" min="0.001" step="0.001" value={lineQuantity} onChange={event => setLineQuantity(event.target.value)} placeholder="Cantidad" /><button className="secondary" type="button" onClick={addLine}>Agregar</button><button className="primary" type="button" disabled={saving} onClick={() => void saveRecipe()}>{saving ? 'Guardando…' : 'Guardar receta'}</button></div></>}</section>}
+    {ingredientOpen && <div className="admin-modal" role="dialog" aria-modal="true" aria-label="Editor de ingrediente"><form className="modal-card admin-form" onSubmit={ingredientSubmit}><div className="panel-title wide"><h2>{editing ? 'Editar ingrediente' : 'Nuevo ingrediente'}</h2><button type="button" className="icon-close" onClick={() => setIngredientOpen(false)}>×</button></div><label>Nombre<input name="name" defaultValue={editing?.name} required /></label><label>Unidad<select name="unit" defaultValue={editing?.unit ?? 'GRAM'}><option value="GRAM">Gramos</option><option value="MILLILITER">Mililitros</option><option value="UNIT">Unidades</option></select></label>{!editing && <label>Stock inicial<input name="initialStock" type="number" min="0" step="0.001" defaultValue="0" required /></label>}<label>Stock mínimo<input name="stockMinimum" type="number" min="0" step="0.001" defaultValue={editing?.stockMinimum ?? 0} required /></label><label>Costo por unidad (opcional)<input name="unitCost" type="number" min="0" step="0.0001" defaultValue={editing?.unitCost} /></label><label className="check"><input name="active" type="checkbox" defaultChecked={editing?.active ?? true} /> Activo</label><div className="form-actions wide"><button type="button" className="secondary" onClick={() => setIngredientOpen(false)}>Cancelar</button><button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar ingrediente'}</button></div></form></div>}
+    {adjusting && <div className="admin-modal" role="dialog" aria-modal="true" aria-label="Ajuste de stock"><form className="modal-card admin-form" onSubmit={adjustmentSubmit}><div className="panel-title wide"><div><p className="eyebrow">MOVIMIENTO MANUAL</p><h2>{adjusting.name}</h2></div><button type="button" className="icon-close" onClick={() => setAdjusting(undefined)}>×</button></div><label>Tipo<select name="type"><option value="ENTRY">Entrada</option><option value="ADJUSTMENT">Ajuste</option></select></label><label>Cantidad<input name="quantity" type="number" step="0.001" required /></label><label className="wide">Motivo<textarea name="reason" maxLength={500} required /></label><p className="admin-note wide">Usa una cantidad negativa únicamente para corregir existencias. El sistema no permite stock negativo.</p><div className="form-actions wide"><button type="button" className="secondary" onClick={() => setAdjusting(undefined)}>Cancelar</button><button className="primary" disabled={saving}>Registrar movimiento</button></div></form></div>}
+  </>
+}
+
+export function InventoryView({ data, editable, tab, onTab, onEdit, onAdjust, onRecipe }: { data: InventoryOverview; editable: boolean; tab: InventoryTab; onTab(tab: InventoryTab): void; onEdit(ingredient: IngredientView): void; onAdjust(ingredient: IngredientView): void; onRecipe(value: string): void }) {
+  return <><section className="inventory-metrics"><article><span>Ingredientes</span><strong>{data.trackedIngredients}</strong></article><article className="warning"><span>Stock bajo</span><strong>{data.lowStockCount}</strong></article><article className="danger"><span>Agotados</span><strong>{data.outOfStockCount}</strong></article></section><nav className="inventory-tabs" aria-label="Secciones de inventario"><button className={tab === 'ingredients' ? 'active' : ''} onClick={() => onTab('ingredients')}>Ingredientes</button><button className={tab === 'recipes' ? 'active' : ''} onClick={() => onTab('recipes')}>Recetas</button><button className={tab === 'movements' ? 'active' : ''} onClick={() => onTab('movements')}>Movimientos</button></nav>
+    {tab === 'ingredients' && (!data.ingredients.length ? <EmptyState text="Aún no hay ingredientes." /> : <section className="admin-table-card"><table><thead><tr><th>Ingrediente</th><th>Existencia</th><th>Mínimo</th><th>Estado</th><th>Costo</th><th>Acciones</th></tr></thead><tbody>{data.ingredients.map(ingredient => <tr key={ingredient.id}><td data-label="Ingrediente"><strong>{ingredient.name}</strong></td><td data-label="Existencia">{formatStock(ingredient.stockCurrent, ingredient.unit)}</td><td data-label="Mínimo">{formatStock(ingredient.stockMinimum, ingredient.unit)}</td><td data-label="Estado"><span className={`stock-pill ${ingredient.stockStatus.toLowerCase()}`}>{stockStatusLabels[ingredient.stockStatus]}</span></td><td data-label="Costo">{ingredient.unitCost == null ? '—' : `$ ${ingredient.unitCost.toLocaleString('es-CO')}`}</td><td data-label="Acciones">{editable ? <div className="card-actions"><button className="secondary" onClick={() => onAdjust(ingredient)}>Ajustar</button><button className="secondary" onClick={() => onEdit(ingredient)}>Editar</button></div> : 'Solo consulta'}</td></tr>)}</tbody></table></section>)}
+    {tab === 'recipes' && <section className="recipe-grid"><RecipeCards title="Productos" kind="product" recipes={data.productRecipes} editable={editable} onRecipe={onRecipe} /><RecipeCards title="Extras" kind="extra" recipes={data.extraRecipes} editable={editable} onRecipe={onRecipe} /></section>}
+    {tab === 'movements' && (!data.recentMovements.length ? <EmptyState text="Todavía no hay movimientos." /> : <section className="admin-table-card"><table><thead><tr><th>Fecha</th><th>Ingrediente</th><th>Tipo</th><th>Cantidad</th><th>Saldo</th><th>Motivo</th></tr></thead><tbody>{data.recentMovements.map(movement => <tr key={movement.id}><td data-label="Fecha">{time(movement.createdAt)}</td><td data-label="Ingrediente"><strong>{movement.ingredientName}</strong></td><td data-label="Tipo">{inventoryMovementLabels[movement.type]}</td><td data-label="Cantidad" className={movement.quantityDelta < 0 ? 'movement-negative' : 'movement-positive'}>{movement.quantityDelta > 0 ? '+' : ''}{movement.quantityDelta}</td><td data-label="Saldo">{movement.balanceAfter}</td><td data-label="Motivo">{movement.reason}{movement.orderNumber && <small> · {movement.orderNumber}</small>}</td></tr>)}</tbody></table></section>)}
+  </>
+}
+
+function RecipeCards({ title, kind, recipes, editable, onRecipe }: { title: string; kind: 'product' | 'extra'; recipes: RecipeView[]; editable: boolean; onRecipe(value: string): void }) {
+  return <section className="admin-panel"><div className="panel-title"><h2>{title}</h2></div>{recipes.map(recipe => <article className="recipe-card" key={recipe.targetId}><div><strong>{recipe.targetName}</strong><span className={`stock-pill ${recipe.effectiveAvailable ? 'ok' : 'out'}`}>{recipe.effectiveAvailable ? 'Disponible' : 'Sin insumos'}</span></div>{recipe.ingredients.length ? <ul>{recipe.ingredients.map(line => <li key={line.ingredientId}>{line.ingredientName}<b>{formatStock(line.quantity, line.unit)}</b></li>)}</ul> : <p>Sin receta configurada</p>}{editable && <button className="secondary" onClick={() => onRecipe(`${kind}:${recipe.targetId}`)}>Editar receta</button>}</article>)}</section>
+}

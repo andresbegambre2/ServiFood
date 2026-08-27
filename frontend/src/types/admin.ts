@@ -6,7 +6,7 @@ export type DeliveryType = 'DELIVERY' | 'PICKUP'
 
 export interface AdminUser { id: number; name: string; email: string; role: AdminRole }
 export interface OrderSummary { publicNumber: string; customerName: string; createdAt: string; deliveryType: DeliveryType; total: number; paymentMethod?: PaymentMethod; paymentStatus?: PaymentStatus; orderStatus: OrderStatus }
-export interface Dashboard { salesToday: number; ordersToday: number; newOrders: number; preparingOrders: number; paymentsUnderReview: number; averageTicket: number; latestOrders: OrderSummary[]; topProducts: { name: string; quantity: number }[] }
+export interface Dashboard { salesToday: number; ordersToday: number; newOrders: number; preparingOrders: number; paymentsUnderReview: number; lowStockIngredients: number; outOfStockIngredients: number; averageTicket: number; latestOrders: OrderSummary[]; topProducts: { name: string; quantity: number }[] }
 export interface PaymentView { id: number; method: PaymentMethod; status: PaymentStatus; amount: number; cashTendered?: number; receiptAvailable: boolean; reviewerName?: string; reviewedAt?: string; rejectionReason?: string }
 export interface OrderDetail extends Omit<OrderSummary, 'orderStatus' | 'paymentMethod' | 'paymentStatus'> { customerPhone: string; customerEmail?: string; deliveryAddress?: string; subtotal: number; discount: number; deliveryFee: number; status: OrderStatus; items: { name: string; unitPrice: number; quantity: number; notes?: string; subtotal: number; extras: { name: string; quantity: number; subtotal: number }[] }[]; payment?: PaymentView; timeline: Record<string, string | undefined> }
 export interface PaymentQueueItem { publicNumber: string; customerName: string; createdAt: string; amount: number; method: PaymentMethod; status: PaymentStatus; receiptAvailable: boolean }
@@ -16,3 +16,11 @@ export interface ExtraView { id: number; name: string; price: number; available:
 export interface PromotionView { id: number; name: string; description?: string; discountType: 'PERCENTAGE' | 'FIXED_AMOUNT'; discountValue: number; startsAt: string; endsAt: string; minimumPurchase: number; usageLimit?: number; active: boolean }
 export interface HoursView { id?: number; dayOfWeek: string; slotNumber: number; opensAt?: string; closesAt?: string; closed: boolean }
 export interface SettingsView { tradeName: string; description?: string; phone: string; whatsapp: string; address: string; instagram?: string; facebook?: string; baseDeliveryFee: number; estimatedPreparationMinutes: number; timeZone: string; transferProvider?: string; transferAccountHolder?: string; transferAccountReference?: string; paymentQrPath?: string; hours: HoursView[] }
+export type IngredientUnit = 'GRAM' | 'MILLILITER' | 'UNIT'
+export type StockStatus = 'OK' | 'LOW' | 'OUT' | 'INACTIVE'
+export type InventoryMovementType = 'ENTRY' | 'CONSUMPTION' | 'ADJUSTMENT' | 'REVERSAL'
+export interface IngredientView { id: number; name: string; unit: IngredientUnit; stockCurrent: number; stockMinimum: number; unitCost?: number; active: boolean; stockStatus: StockStatus }
+export interface RecipeLine { ingredientId: number; ingredientName: string; unit: IngredientUnit; quantity: number }
+export interface RecipeView { targetId: number; targetName: string; effectiveAvailable: boolean; ingredients: RecipeLine[] }
+export interface InventoryMovementView { id: number; ingredientId: number; ingredientName: string; type: InventoryMovementType; quantityDelta: number; balanceAfter: number; reason: string; orderNumber?: string; createdBy?: string; createdAt: string }
+export interface InventoryOverview { trackedIngredients: number; lowStockCount: number; outOfStockCount: number; ingredients: IngredientView[]; productRecipes: RecipeView[]; extraRecipes: RecipeView[]; recentMovements: InventoryMovementView[] }

@@ -33,6 +33,7 @@ describe('administrative routes', () => {
     expect(html).toContain('Pedidos')
     expect(html).toContain('Pagos')
     expect(html).toContain('Productos')
+    expect(html).toContain('Inventario')
     expect(html).not.toContain('Categorías')
     expect(html).not.toContain('Configuración')
   })

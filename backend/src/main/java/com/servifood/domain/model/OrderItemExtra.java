@@ -19,4 +19,5 @@ public class OrderItemExtra {
     void assignTo(OrderItem orderItem) { this.orderItem = orderItem; }
     public String getExtraNameSnapshot() { return extraNameSnapshot; } public BigDecimal getUnitPriceSnapshot() { return unitPriceSnapshot; }
     public int getQuantity() { return quantity; } public BigDecimal getSubtotal() { return subtotal; }
+    public Extra getExtra() { return extra; }
 }

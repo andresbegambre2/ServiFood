@@ -22,10 +22,12 @@ public class AdminOrderService {
     private final InternalUserRepository users;
     private final BusinessSettingsRepository settings;
     private final ReceiptStorage receipts;
+    private final InventoryConsumptionService inventory;
+    private final IngredientRepository ingredients;
 
     public AdminOrderService(CustomerOrderRepository orders, PaymentRepository payments, InternalUserRepository users,
-            BusinessSettingsRepository settings, ReceiptStorage receipts) {
-        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts;
+            BusinessSettingsRepository settings, ReceiptStorage receipts, InventoryConsumptionService inventory, IngredientRepository ingredients) {
+        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts; this.inventory = inventory; this.ingredients = ingredients;
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +45,7 @@ public class AdminOrderService {
                 .map(entry -> new TopProduct(entry.getKey(), entry.getValue())).toList();
         long underReview = payments.findByStatusOrderByCreatedAtDesc(PaymentStatus.UNDER_REVIEW).size();
         return new Dashboard(sales, todayOrders.size(), count(todayOrders, OrderStatus.NEW), count(todayOrders, OrderStatus.PREPARING),
-                underReview, average, todayOrders.stream().limit(8).map(this::summary).toList(), top);
+                underReview, ingredients.countLowStock(), ingredients.countOutOfStock(), average, todayOrders.stream().limit(8).map(this::summary).toList(), top);
     }
 
     @Transactional(readOnly = true)
@@ -63,14 +65,14 @@ public class AdminOrderService {
 
     @Transactional
     public OrderDetail changeStatus(String publicNumber, OrderStatus target, String reason) {
-        CustomerOrder order = order(publicNumber);
+        CustomerOrder order = orders.findLockedByPublicNumber(publicNumber).orElseThrow(() -> new ResourceNotFoundException("Order", publicNumber));
         switch (target) {
             case CONFIRMED -> order.confirm();
-            case PREPARING -> order.startPreparation();
+            case PREPARING -> { order.startPreparation(); inventory.consume(order); }
             case READY -> order.markReady();
             case ON_THE_WAY -> order.markOnTheWay();
             case DELIVERED -> order.deliver();
-            case CANCELLED -> order.cancel(reason);
+            case CANCELLED -> { order.cancel(reason); inventory.reverse(order); }
             default -> throw new DomainException("Transición de estado no permitida");
         }
         return detailOf(orders.save(order));
