@@ -23,7 +23,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('admin-session-expired', expired)
   }, [])
   const value = useMemo<AdminAuthState>(() => ({ user, loading, message,
-    async login(email, password) { await loginRequest(email, password); await refresh() },
+    async login(email, password) { await loginRequest(email, password); const loggedUser = await adminRequest<AdminUser>('/auth/session'); setUser(loggedUser); setMessage(undefined); setLoading(false); return loggedUser },
     async logout() { await logoutRequest(); setUser(undefined) }, refresh,
   }), [user, loading, message])
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>
