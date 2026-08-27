@@ -60,6 +60,25 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 
 El rol `ADMIN` tiene acceso completo; `CASHIER` opera pedidos y pagos y consulta productos; `KITCHEN` no puede entrar todavía al panel general. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
 
+## Pantalla de cocina
+
+La ruta `/kitchen` ofrece un tablero operativo separado del panel administrativo, diseñado para pantallas táctiles, tabletas y móviles. Solo los roles `KITCHEN` y `ADMIN` pueden abrirlo; `CASHIER` mantiene el acceso denegado.
+
+- muestra pedidos confirmados como **Nuevos**, además de **En preparación** y **Listos**;
+- conserva los pedidos más antiguos primero y destaca los que llevan 20 minutos o más;
+- presenta entrega, cantidades, extras, observaciones por producto y nota general;
+- permite únicamente `Nuevo → En preparación → Listo`, con actualización optimista y reversión visible si falla;
+- consulta novedades cada 12 segundos, pausa las consultas mientras la pestaña está oculta y refresca al volver;
+- excluye transferencias pendientes o rechazadas; solo una transferencia aprobada habilita la preparación.
+
+La visibilidad de cocina comienza cuando Caja o Administración confirma el pedido. El botón de pantalla completa es opcional y el tablero continúa funcionando cuando el navegador no ofrece esa capacidad.
+
+| Ruta o API | Acceso |
+| --- | --- |
+| `/kitchen` | KITCHEN y ADMIN |
+| `GET /api/v1/kitchen/orders` | KITCHEN y ADMIN |
+| `PATCH /api/v1/kitchen/orders/{publicNumber}/stage` | KITCHEN y ADMIN, con CSRF |
+
 ## API pública
 
 La API pública usa DTOs y se encuentra bajo `/api/v1/public`:
@@ -92,11 +111,12 @@ ServiFood/
 ├── frontend/                        React + TypeScript + Vite
 │   ├── public/images/               Assets gastronómicos locales optimizados
 │   └── src/
-│       ├── api/                     Cliente y contratos de catálogo
+│       ├── api/                     Clientes públicos, administrativos y de cocina
 │       ├── components/              Componentes reutilizables
 │       ├── features/cart/           Estado, persistencia y UI del carrito
-│       ├── layouts/                 Layout público responsive
-│       ├── pages/                   Páginas de la tienda
+│       ├── features/kitchen/        Estado, polling y reglas visuales de cocina
+│       ├── layouts/                 Layouts y controles de acceso
+│       ├── pages/                   Tienda, panel y tablero de cocina
 │       ├── types/                   DTOs TypeScript
 │       └── utils/                   Moneda y utilidades
 ├── docs/domain-model.md             Decisiones del dominio
@@ -157,7 +177,7 @@ npm run test
 npm run build
 ```
 
-Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos y operaciones administrativas. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros y manejo de sesión.
+Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos, operaciones administrativas y el flujo protegido de cocina. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros, manejo de sesión, tablero de cocina, orden cronológico, transiciones y polling visible.
 
 El workflow `.github/workflows/ci.yml` ejecuta en Pull Requests a `main` y pushes relevantes: suite backend con Java 21, instalación reproducible, lint, tests y build frontend con Node 22, además de verificación de espacios en los cambios. CI usa H2 y no requiere secretos.
 
