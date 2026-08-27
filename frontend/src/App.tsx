@@ -9,6 +9,21 @@ import { CartPage } from './pages/CartPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { AdminAuthProvider } from './features/admin/AdminAuth'
+import { AdminLayout, RequireAdmin } from './layouts/AdminLayout'
+import { AdminLoginPage } from './pages/AdminLoginPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminOrdersPage } from './pages/AdminOrdersPage'
+import { AdminOrderDetailPage } from './pages/AdminOrderDetailPage'
+import { AdminPaymentsPage } from './pages/AdminPaymentsPage'
+import { AdminProductsPage } from './pages/AdminProductsPage'
+import { AdminCategoriesPage } from './pages/AdminCategoriesPage'
+import { AdminPromotionsPage } from './pages/AdminPromotionsPage'
+import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import './styles/storefront.css'
+import './styles/admin.css'
 
-export default function App() { return <BrowserRouter><StorefrontProvider><CartProvider><Routes><Route element={<PublicLayout />}><Route index element={<HomePage />} /><Route path="menu" element={<MenuPage />} /><Route path="menu/:slug" element={<ProductPage />} /><Route path="cart" element={<CartPage />} /><Route path="checkout" element={<CheckoutPage />} /><Route path="order/:publicNumber" element={<OrderConfirmationPage />} /><Route path="*" element={<NotFoundPage />} /></Route></Routes></CartProvider></StorefrontProvider></BrowserRouter> }
+export default function App() { return <BrowserRouter><Routes>
+  <Route path="admin/*" element={<AdminAuthProvider><Routes><Route path="login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route index element={<AdminDashboardPage />} /><Route path="orders" element={<AdminOrdersPage />} /><Route path="orders/:publicNumber" element={<AdminOrderDetailPage />} /><Route path="payments" element={<AdminPaymentsPage />} /><Route path="products" element={<AdminProductsPage />} /><Route path="categories" element={<AdminCategoriesPage />} /><Route path="promotions" element={<AdminPromotionsPage />} /><Route path="settings" element={<AdminSettingsPage />} /></Route></Route></Routes></AdminAuthProvider>} />
+  <Route path="*" element={<StorefrontProvider><CartProvider><Routes><Route element={<PublicLayout />}><Route index element={<HomePage />} /><Route path="menu" element={<MenuPage />} /><Route path="menu/:slug" element={<ProductPage />} /><Route path="cart" element={<CartPage />} /><Route path="checkout" element={<CheckoutPage />} /><Route path="order/:publicNumber" element={<OrderConfirmationPage />} /><Route path="*" element={<NotFoundPage />} /></Route></Routes></CartProvider></StorefrontProvider>} />
+</Routes></BrowserRouter> }

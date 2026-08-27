@@ -1,0 +1,4 @@
+const labels: Record<string, string> = { NEW: 'Nuevo', CONFIRMED: 'Confirmado', PREPARING: 'Preparando', READY: 'Listo', ON_THE_WAY: 'En camino', DELIVERED: 'Entregado', CANCELLED: 'Cancelado', PENDING: 'Pendiente', UNDER_REVIEW: 'Por revisar', APPROVED: 'Aprobado', REJECTED: 'Rechazado', DELIVERY: 'Domicilio', PICKUP: 'Recoger', TRANSFER: 'Transferencia', CASH: 'Efectivo', PAY_ON_PICKUP: 'Pago al recoger' }
+export const label = (value?: string) => value ? labels[value] ?? value : 'Sin registrar'
+export const time = (value: string) => new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit' }).format(new Date(value))
+export const dateTime = (value?: string) => value ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Pendiente'

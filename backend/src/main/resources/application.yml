@@ -33,3 +33,5 @@ app:
   uploads:
     receipts-directory: ${RECEIPTS_DIRECTORY:./var/receipts}
     receipts-max-bytes: ${RECEIPTS_MAX_BYTES:5242880}
+    images-directory: ${IMAGES_DIRECTORY:./var/images}
+    images-max-bytes: ${IMAGES_MAX_BYTES:5242880}

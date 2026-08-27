@@ -40,6 +40,7 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     @Override @Transactional
     public void run(ApplicationArguments args) {
+        ensureUsers();
         if (categories.count() > 0) {
             enrichExistingDemoSettings();
             return;
@@ -69,7 +70,6 @@ public class DemoDataInitializer implements ApplicationRunner {
                 product("Soda de frutos rojos", "soda-frutos-rojos", "Soda fría con frutos rojos y cítricos.", "9000", drinks),
                 product("Brownie tibio", "brownie-tibio", "Chocolate intenso y centro suave.", "10000", desserts),
                 product("Cheesecake de maracuyá", "cheesecake-maracuya", "Cremoso, fresco y ligeramente ácido.", "12000", desserts)));
-        users.save(new InternalUser("Administrador Demo", "admin@servifood.local", passwordEncoder.encode(demoPassword), UserRole.ADMIN));
         BusinessSettings demoSettings = new BusinessSettings("Distrito Smash", "Fuego, barrio y hamburguesas hechas sin atajos.", "+57 300 555 0147", "+57 300 555 0147", "Carrera 13 # 74-21, Bogotá", money("5000"), 25, "COP");
         demoSettings.setSocialLinks("https://instagram.com/distritosmash", "https://facebook.com/distritosmash");
         demoSettings.configureCheckout("America/Bogota", "Nequi", "Distrito Smash Demo", "300 555 0147", "/images/payment-qr-demo.svg");
@@ -80,6 +80,16 @@ public class DemoDataInitializer implements ApplicationRunner {
             boolean closed = day == DayOfWeek.MONDAY;
             hours.save(new BusinessHours(day, 1, closed ? null : LocalTime.of(12, 0), closed ? null : LocalTime.of(22, 0), closed));
         }
+    }
+
+    private void ensureUsers() {
+        createUser("Administrador Demo", "admin@servifood.local", UserRole.ADMIN);
+        createUser("Caja Demo", "cashier@servifood.local", UserRole.CASHIER);
+        createUser("Cocina Demo", "kitchen@servifood.local", UserRole.KITCHEN);
+    }
+
+    private void createUser(String name, String email, UserRole role) {
+        if (users.findByEmailIgnoreCase(email).isEmpty()) users.save(new InternalUser(name, email, passwordEncoder.encode(demoPassword), role));
     }
 
     private void enrichExistingDemoSettings() {

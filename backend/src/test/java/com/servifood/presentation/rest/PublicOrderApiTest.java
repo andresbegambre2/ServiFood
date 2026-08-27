@@ -166,7 +166,7 @@ class PublicOrderApiTest {
 
     @Test
     void keepsAdministrativeRoutesProtected() throws Exception {
-        mvc.perform(get("/api/v1/admin/orders")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/orders")).andExpect(status().isUnauthorized());
     }
 
     private JsonNode create(Map<String, Object> request, MockMultipartFile receipt, int status) throws Exception {
