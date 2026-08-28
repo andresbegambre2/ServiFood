@@ -25,6 +25,12 @@ public class CustomerOrder extends AuditableEntity {
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal subtotal = BigDecimal.ZERO;
     @NotNull @DecimalMin("0.00") @Column(name = "delivery_fee", nullable = false, precision = 12, scale = 2) private BigDecimal deliveryFee = BigDecimal.ZERO;
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal discount = BigDecimal.ZERO;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "coupon_id") private Coupon coupon;
+    @Size(max = 40) @Column(name = "coupon_code_snapshot", length = 40) private String couponCodeSnapshot;
+    @NotNull @DecimalMin("0.00") @Column(name = "coupon_discount", nullable = false, precision = 12, scale = 2) private BigDecimal couponDiscount = BigDecimal.ZERO;
+    @PositiveOrZero @Column(name = "points_redeemed", nullable = false) private int pointsRedeemed;
+    @NotNull @DecimalMin("0.00") @Column(name = "points_discount", nullable = false, precision = 12, scale = 2) private BigDecimal pointsDiscount = BigDecimal.ZERO;
+    @PositiveOrZero @Column(name = "points_earned", nullable = false) private int pointsEarned;
     @NotNull @DecimalMin("0.00") @Column(nullable = false, precision = 12, scale = 2) private BigDecimal total = BigDecimal.ZERO;
     @Size(max = 1000) @Column(length = 1000) private String notes;
     @Positive @Column(name = "estimated_minutes") private Integer estimatedMinutes;
@@ -37,6 +43,8 @@ public class CustomerOrder extends AuditableEntity {
     @Column(name = "cancelled_at") private Instant cancelledAt;
     @Column(name = "inventory_consumed_at") private Instant inventoryConsumedAt;
     @Column(name = "inventory_reverted_at") private Instant inventoryRevertedAt;
+    @Column(name = "loyalty_awarded_at") private Instant loyaltyAwardedAt;
+    @Column(name = "loyalty_reversed_at") private Instant loyaltyReversedAt;
     @Size(max = 500) @Column(name = "cancellation_reason", length = 500) private String cancellationReason;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true) private List<@Valid OrderItem> items = new ArrayList<>();
     protected CustomerOrder() {}
@@ -50,6 +58,10 @@ public class CustomerOrder extends AuditableEntity {
     }
     public void addItem(OrderItem item) { item.assignTo(this); items.add(item); recalculate(); }
     public void applyDiscount(BigDecimal discount) { this.discount = discount; recalculate(); }
+    public void applyLoyalty(Coupon coupon, BigDecimal couponDiscount, int pointsRedeemed, BigDecimal pointsDiscount, BigDecimal totalDiscount) {
+        this.coupon = coupon; this.couponCodeSnapshot = coupon == null ? null : coupon.getCode(); this.couponDiscount = couponDiscount;
+        this.pointsRedeemed = pointsRedeemed; this.pointsDiscount = pointsDiscount; applyDiscount(totalDiscount);
+    }
     void recalculate() {
         subtotal = items.stream().map(OrderItem::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         total = subtotal.add(deliveryFee == null ? BigDecimal.ZERO : deliveryFee).subtract(discount == null ? BigDecimal.ZERO : discount).max(BigDecimal.ZERO);
@@ -68,6 +80,8 @@ public class CustomerOrder extends AuditableEntity {
     public void cancel() { cancel("Cancelado por el restaurante"); }
     public void markInventoryConsumed() { if (inventoryConsumedAt == null) inventoryConsumedAt = Instant.now(); }
     public void markInventoryReverted() { if (inventoryConsumedAt != null && inventoryRevertedAt == null) inventoryRevertedAt = Instant.now(); }
+    public void markLoyaltyAwarded(int points) { if (loyaltyAwardedAt == null) { pointsEarned = points; loyaltyAwardedAt = Instant.now(); } }
+    public void markLoyaltyReversed() { if (loyaltyReversedAt == null) loyaltyReversedAt = Instant.now(); }
     private void requireStatus(OrderStatus expected) { if (status != expected) throw new DomainException("expected order status " + expected + " but was " + status); }
     @AssertTrue(message = "delivery address is required for delivery orders")
     public boolean isDeliveryAddressValid() { return deliveryType != DeliveryType.DELIVERY || (deliveryAddressSnapshot != null && !deliveryAddressSnapshot.isBlank()); }
@@ -84,4 +98,8 @@ public class CustomerOrder extends AuditableEntity {
     public Instant getReadyAt() { return readyAt; } public Instant getDeliveredAt() { return deliveredAt; } public Instant getCancelledAt() { return cancelledAt; }
     public Instant getOnTheWayAt() { return onTheWayAt; } public String getCancellationReason() { return cancellationReason; }
     public Instant getInventoryConsumedAt() { return inventoryConsumedAt; } public Instant getInventoryRevertedAt() { return inventoryRevertedAt; }
+    public Customer getCustomer() { return customer; } public Coupon getCoupon() { return coupon; } public String getCouponCodeSnapshot() { return couponCodeSnapshot; }
+    public BigDecimal getCouponDiscount() { return couponDiscount; } public int getPointsRedeemed() { return pointsRedeemed; }
+    public BigDecimal getPointsDiscount() { return pointsDiscount; } public int getPointsEarned() { return pointsEarned; }
+    public Instant getLoyaltyAwardedAt() { return loyaltyAwardedAt; } public Instant getLoyaltyReversedAt() { return loyaltyReversedAt; }
 }

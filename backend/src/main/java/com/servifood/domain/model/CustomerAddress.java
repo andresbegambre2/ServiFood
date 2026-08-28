@@ -20,4 +20,5 @@ public class CustomerAddress extends AuditableEntity {
     void assignTo(Customer customer) { this.customer = customer; }
     public Long getId() { return id; } public Customer getCustomer() { return customer; } public String getAddress() { return address; }
     public String getNeighborhood() { return neighborhood; } public boolean isPrimaryAddress() { return primaryAddress; }
+    public String getLabel() { return label; } public String getReference() { return reference; }
 }

@@ -14,4 +14,5 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     Optional<CustomerOrder> findByClientRequestId(String clientRequestId);
     boolean existsByPublicNumber(String publicNumber);
     List<CustomerOrder> findAllByOrderByCreatedAtDesc();
+    List<CustomerOrder> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
 }
