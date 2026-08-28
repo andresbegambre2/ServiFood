@@ -47,30 +47,33 @@ public class PublicOrderService {
     private final boolean allowWhenClosed;
     private final byte[] trackingSecret;
     private final InventoryAvailabilityService inventory;
+    private final LoyaltyService loyalty;
 
     @Autowired
     public PublicOrderService(CustomerOrderRepository orders, CustomerRepository customers, ProductRepository products,
             PromotionRepository promotions, BusinessSettingsRepository settings, BusinessHoursRepository hours,
-            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory,
+            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory, LoyaltyService loyalty,
             @Value("${app.orders.allow-when-closed:false}") boolean allowWhenClosed,
             @Value("${app.orders.tracking-secret}") String trackingSecret) {
-        this(orders, customers, products, promotions, settings, hours, payments, receipts, inventory, Clock.systemUTC(),
+        this(orders, customers, products, promotions, settings, hours, payments, receipts, inventory, loyalty, Clock.systemUTC(),
                 allowWhenClosed, trackingSecret);
     }
 
     PublicOrderService(CustomerOrderRepository orders, CustomerRepository customers, ProductRepository products,
             PromotionRepository promotions, BusinessSettingsRepository settings, BusinessHoursRepository hours,
-            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory, Clock clock, boolean allowWhenClosed, String trackingSecret) {
+            PaymentRepository payments, ReceiptStorage receipts, InventoryAvailabilityService inventory, LoyaltyService loyalty, Clock clock, boolean allowWhenClosed, String trackingSecret) {
         if (trackingSecret == null || trackingSecret.length() < 32) throw new IllegalArgumentException("tracking secret must contain at least 32 characters");
         this.orders = orders; this.customers = customers; this.products = products; this.promotions = promotions;
         this.settings = settings; this.hours = hours; this.payments = payments; this.receipts = receipts; this.clock = clock;
         this.allowWhenClosed = allowWhenClosed; this.trackingSecret = trackingSecret.getBytes(StandardCharsets.UTF_8);
         this.inventory = inventory;
+        this.loyalty = loyalty;
     }
 
     @Transactional(readOnly = true)
     public CheckoutQuoteResponse quote(CheckoutQuoteRequest request) {
-        return calculate(request.deliveryType(), request.lines(), false).response();
+        Customer customer = customerByPhone(request.customerPhone());
+        return calculate(request.deliveryType(), request.lines(), customer, request.couponCode(), request.pointsToRedeem(), false, false).response();
     }
 
     @Transactional
@@ -82,11 +85,11 @@ public class PublicOrderService {
         validateCheckout(request, receipt);
         BusinessSettings business = business();
         assertOpen(business);
-        Calculation calculation = calculate(request.delivery().type(), request.lines(), true);
+        Customer customer = customer(request.customer(), request.delivery());
+        Calculation calculation = calculate(request.delivery().type(), request.lines(), customer, request.couponCode(), request.pointsToRedeem(), true, true);
         String storedReceipt = null;
         try {
             if (request.payment().method() == PaymentMethod.TRANSFER) storedReceipt = receipts.store(receipt);
-            Customer customer = customer(request.customer(), request.delivery());
             String publicNumber = nextPublicNumber(business.getTimeZone());
             String token = trackingToken(publicNumber, requestId);
             String address = deliverySnapshot(request.delivery());
@@ -96,8 +99,10 @@ public class PublicOrderService {
             order.configurePublicCheckout(requestId, sha256(token), blankToNull(request.customer().email()),
                     calculation.response().totals().estimatedMinutes());
             calculation.items().forEach(order::addItem);
-            order.applyDiscount(calculation.response().totals().discount());
+            order.applyLoyalty(calculation.loyalty().coupon(), calculation.loyalty().couponDiscount(), calculation.loyalty().pointsRedeemed(),
+                    calculation.loyalty().pointsDiscount(), calculation.response().totals().discount());
             orders.saveAndFlush(order);
+            loyalty.reserve(order, customer, calculation.loyalty());
 
             Payment payment = new Payment(order, request.payment().method(), order.getTotal());
             if (request.payment().method() == PaymentMethod.TRANSFER) payment.submitForReview(storedReceipt);
@@ -126,10 +131,11 @@ public class PublicOrderService {
         BusinessSettings business = business();
         return new OrderTrackingResponse(order.getPublicNumber(), order.getStatus(), payment.getMethod(), payment.getStatus(),
                 order.getDeliveryType(), order.getDeliveryAddressSnapshot(), order.getCustomerNameSnapshot(), order.getCreatedAt(),
-                totals(order, business), itemResponses(order.getItems()), business.getWhatsapp());
+                totals(order, business), itemResponses(order.getItems()), business.getWhatsapp(), loyalty.orderQuote(order));
     }
 
-    private Calculation calculate(DeliveryType deliveryType, List<OrderLineRequest> requests, boolean rejectPriceChanges) {
+    private Calculation calculate(DeliveryType deliveryType, List<OrderLineRequest> requests, Customer customer, String couponCode,
+            Integer pointsToRedeem, boolean rejectPriceChanges, boolean lockCoupon) {
         BusinessSettings business = business();
         List<OrderItem> items = new ArrayList<>();
         boolean priceChanged = false;
@@ -150,15 +156,19 @@ public class PublicOrderService {
             items.add(item);
         }
         BigDecimal subtotal = items.stream().map(OrderItem::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal discount = bestDiscount(subtotal);
+        BigDecimal promotionDiscount = bestDiscount(subtotal);
+        LoyaltyService.Pricing loyaltyPricing = lockCoupon
+                ? loyalty.reservePreview(customer, subtotal.subtract(promotionDiscount), couponCode, pointsToRedeem)
+                : loyalty.preview(customer, subtotal.subtract(promotionDiscount), couponCode, pointsToRedeem);
+        BigDecimal discount = money(promotionDiscount.add(loyaltyPricing.couponDiscount()).add(loyaltyPricing.pointsDiscount()).min(subtotal));
         BigDecimal deliveryFee = deliveryType == DeliveryType.DELIVERY ? money(business.getBaseDeliveryFee()) : money(BigDecimal.ZERO);
         BigDecimal total = money(subtotal.add(deliveryFee).subtract(discount).max(BigDecimal.ZERO));
         int estimate = business.getEstimatedPreparationMinutes() + (deliveryType == DeliveryType.DELIVERY ? 15 : 0);
         CheckoutQuoteResponse response = new CheckoutQuoteResponse(
                 new OrderTotalsResponse(money(subtotal), money(discount), deliveryFee, total, business.getCurrency(), estimate),
-                itemResponses(items));
+                itemResponses(items), loyaltyPricing.quote());
         if (rejectPriceChanges && priceChanged) throw new CheckoutException(HttpStatus.CONFLICT, "PRICE_CHANGED", "Algunos precios cambiaron. Revisa el total actualizado.", response);
-        return new Calculation(items, response);
+        return new Calculation(items, response, loyaltyPricing);
     }
 
     private BigDecimal bestDiscount(BigDecimal subtotal) {
@@ -187,10 +197,11 @@ public class PublicOrderService {
 
     private Customer customer(CustomerCheckoutRequest request, DeliveryCheckoutRequest delivery) {
         String phone = normalizePhone(request.phone());
-        Customer customer = customers.findFirstByPhone(phone).orElseGet(() -> new Customer(request.name().trim(), phone, blankToNull(request.email())));
+        Customer customer = customers.findLockedByPhone(phone).stream().findFirst().orElseGet(() -> new Customer(request.name().trim(), phone, blankToNull(request.email())));
         if (delivery.type() == DeliveryType.DELIVERY) customer.addAddress(new CustomerAddress("Pedido web", delivery.address().trim(), delivery.neighborhood().trim(), blankToNull(delivery.reference()), false));
         return customers.save(customer);
     }
+    private Customer customerByPhone(String phone) { if (isBlank(phone)) return null; String normalized = normalizePhone(phone); if (normalized.length() < 7) return null; return customers.findFirstByPhone(normalized).orElse(null); }
 
     private void assertOpen(BusinessSettings business) {
         if (allowWhenClosed) return;
@@ -215,7 +226,7 @@ public class PublicOrderService {
         BusinessSettings business = business(); String token = trackingToken(order.getPublicNumber(), order.getClientRequestId());
         return new OrderCreatedResponse(order.getPublicNumber(), token, order.getStatus(), payment.getMethod(), payment.getStatus(),
                 order.getDeliveryType(), order.getDeliveryAddressSnapshot(), order.getCustomerNameSnapshot(), order.getCreatedAt(),
-                totals(order, business), itemResponses(order.getItems()), business.getWhatsapp(), idempotent);
+                totals(order, business), itemResponses(order.getItems()), business.getWhatsapp(), loyalty.orderQuote(order), idempotent);
     }
     private Payment paymentFor(CustomerOrder order) { return payments.findFirstByOrderId(order.getId()).orElseThrow(() -> new ResourceNotFoundException("Payment", order.getPublicNumber())); }
     private OrderTotalsResponse totals(CustomerOrder order, BusinessSettings business) { return new OrderTotalsResponse(order.getSubtotal(), order.getDiscount(), order.getDeliveryFee(), order.getTotal(), business.getCurrency(), order.getEstimatedMinutes()); }
@@ -236,5 +247,5 @@ public class PublicOrderService {
         try { return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); }
         catch (GeneralSecurityException exception) { throw new IllegalStateException("SHA-256 is unavailable", exception); }
     }
-    private record Calculation(List<OrderItem> items, CheckoutQuoteResponse response) {}
+    private record Calculation(List<OrderItem> items, CheckoutQuoteResponse response, LoyaltyService.Pricing loyalty) {}
 }

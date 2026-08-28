@@ -31,15 +31,16 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final IngredientRepository ingredients;
     private final ProductRecipeRepository productRecipes;
     private final ExtraRecipeRepository extraRecipes;
+    private final CouponRepository coupons;
     private final PasswordEncoder passwordEncoder;
     private final String demoPassword;
 
     public DemoDataInitializer(CategoryRepository categories, ExtraRepository extras, ProductRepository products,
             InternalUserRepository users, BusinessSettingsRepository settings, BusinessHoursRepository hours, PromotionRepository promotions,
-            IngredientRepository ingredients, ProductRecipeRepository productRecipes, ExtraRecipeRepository extraRecipes,
+            IngredientRepository ingredients, ProductRecipeRepository productRecipes, ExtraRecipeRepository extraRecipes, CouponRepository coupons,
             PasswordEncoder passwordEncoder, @Value("${app.demo.admin-password}") String demoPassword) {
         this.categories = categories; this.extras = extras; this.products = products; this.users = users;
-        this.settings = settings; this.hours = hours; this.promotions = promotions; this.ingredients = ingredients; this.productRecipes = productRecipes; this.extraRecipes = extraRecipes; this.passwordEncoder = passwordEncoder; this.demoPassword = demoPassword;
+        this.settings = settings; this.hours = hours; this.promotions = promotions; this.ingredients = ingredients; this.productRecipes = productRecipes; this.extraRecipes = extraRecipes; this.coupons = coupons; this.passwordEncoder = passwordEncoder; this.demoPassword = demoPassword;
     }
 
     @Override @Transactional
@@ -48,6 +49,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         if (categories.count() > 0) {
             enrichExistingDemoSettings();
             ensureDemoInventory();
+            ensureDemoLoyalty();
             return;
         }
         List<Category> categoryList = categories.saveAll(List.of(
@@ -86,6 +88,7 @@ public class DemoDataInitializer implements ApplicationRunner {
             hours.save(new BusinessHours(day, 1, closed ? null : LocalTime.of(12, 0), closed ? null : LocalTime.of(22, 0), closed));
         }
         ensureDemoInventory();
+        ensureDemoLoyalty();
     }
 
     private void ensureUsers() {
@@ -120,6 +123,10 @@ public class DemoDataInitializer implements ApplicationRunner {
         productRecipe("combo-callejero", new Object[][] {{meat, "150"}, {bread, "1"}, {cheese, "30"}, {potatoes, "250"}, {sauce, "20"}});
         extraRecipe("Carne adicional", meat, "150"); extraRecipe("Cheddar", cheese, "30"); extraRecipe("Tocineta", bacon, "30");
         extraRecipe("Salsa adicional", sauce, "20"); extraRecipe("Jalapeños", jalapeno, "20");
+    }
+    private void ensureDemoLoyalty() {
+        if (coupons.findByCodeIgnoreCase("DISTRITO10").isEmpty()) coupons.save(new Coupon("DISTRITO10", DiscountType.PERCENTAGE,
+                money("10"), Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(90, ChronoUnit.DAYS), money("25000"), 500, 1, true));
     }
 
     private Ingredient ingredient(String name, IngredientUnit unit, String current, String minimum, String cost) {
