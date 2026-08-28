@@ -57,3 +57,9 @@ export async function receiptUrl(publicNumber: string) {
   if (!response.ok) return problem(response)
   return URL.createObjectURL(await response.blob())
 }
+
+export async function adminDownload(path: string) {
+  const response = await fetch(`${API_URL}/admin${path}`, { credentials: 'include', headers: { Accept: 'text/csv' } })
+  if (!response.ok) return problem(response)
+  return response.blob()
+}
