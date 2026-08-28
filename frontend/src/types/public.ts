@@ -14,14 +14,15 @@ export type PaymentStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED'
 export type OrderStatus = 'NEW' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'ON_THE_WAY' | 'DELIVERED' | 'CANCELLED'
 export interface CheckoutExtraRequest { extraId: number; expectedUnitPrice?: number }
 export interface CheckoutLineRequest { productId: number; quantity: number; notes: string; expectedUnitPrice?: number; extras: CheckoutExtraRequest[] }
-export interface CheckoutQuoteRequest { deliveryType: DeliveryType; lines: CheckoutLineRequest[] }
+export interface CheckoutQuoteRequest { deliveryType: DeliveryType; lines: CheckoutLineRequest[]; customerPhone?: string | null; couponCode?: string | null; pointsToRedeem?: number }
 export interface CheckoutCustomerRequest { name: string; phone: string; email: string | null }
 export interface CheckoutDeliveryRequest { type: DeliveryType; address: string | null; neighborhood: string | null; reference: string | null }
 export interface CheckoutPaymentRequest { method: PaymentMethod; cashTendered: number | null }
-export interface CreateOrderRequest { clientRequestId: string; customer: CheckoutCustomerRequest; delivery: CheckoutDeliveryRequest; payment: CheckoutPaymentRequest; lines: CheckoutLineRequest[] }
+export interface CreateOrderRequest { clientRequestId: string; customer: CheckoutCustomerRequest; delivery: CheckoutDeliveryRequest; payment: CheckoutPaymentRequest; lines: CheckoutLineRequest[]; couponCode?: string | null; pointsToRedeem?: number }
 export interface OrderExtraSnapshot { name: string; unitPrice: number; quantity: number; subtotal: number }
 export interface OrderItemSnapshot { name: string; unitPrice: number; quantity: number; notes: string | null; subtotal: number; extras: OrderExtraSnapshot[] }
 export interface OrderTotals { subtotal: number; discount: number; deliveryFee: number; total: number; currency: string; estimatedMinutes: number }
-export interface CheckoutQuote { totals: OrderTotals; items: OrderItemSnapshot[] }
-export interface CreatedOrder { publicNumber: string; trackingToken: string; status: OrderStatus; paymentMethod: PaymentMethod; paymentStatus: PaymentStatus; deliveryType: DeliveryType; deliveryAddress: string | null; customerName: string; createdAt: string; totals: OrderTotals; items: OrderItemSnapshot[]; businessWhatsapp: string; idempotent: boolean }
+export interface LoyaltyQuote { active: boolean; availablePoints: number; pointsRedeemed: number; pointsDiscount: number; couponCode: string | null; couponDiscount: number; pointsToEarn: number; minimumPointsToRedeem: number; maximumRedemptionPercentage: number; amountPerPoint: number }
+export interface CheckoutQuote { totals: OrderTotals; items: OrderItemSnapshot[]; loyalty: LoyaltyQuote }
+export interface CreatedOrder { publicNumber: string; trackingToken: string; status: OrderStatus; paymentMethod: PaymentMethod; paymentStatus: PaymentStatus; deliveryType: DeliveryType; deliveryAddress: string | null; customerName: string; createdAt: string; totals: OrderTotals; items: OrderItemSnapshot[]; businessWhatsapp: string; loyalty: LoyaltyQuote; idempotent: boolean }
 export type TrackedOrder = Omit<CreatedOrder, 'trackingToken' | 'idempotent'>

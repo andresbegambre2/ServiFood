@@ -9,7 +9,7 @@ export const trackingStorageKey = (publicNumber: string) => `servifood:tracking:
 export interface CheckoutDraft {
   name: string; phone: string; email: string; deliveryType: DeliveryType
   address: string; neighborhood: string; reference: string
-  paymentMethod: PaymentMethod; cashTendered: string
+  paymentMethod: PaymentMethod; cashTendered: string; pointsToRedeem: string
 }
 
 export function paymentMethodsFor(deliveryType: DeliveryType, transferConfigured: boolean): PaymentMethod[] {
@@ -31,6 +31,7 @@ export function validateDraft(draft: CheckoutDraft): string | null {
   if (draft.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) return 'Revisa el correo electrónico.'
   if (draft.deliveryType === 'DELIVERY' && (!draft.address.trim() || !draft.neighborhood.trim())) return 'Completa dirección y barrio.'
   if (draft.paymentMethod === 'CASH' && draft.cashTendered && (!Number.isFinite(Number(draft.cashTendered)) || Number(draft.cashTendered) < 0)) return 'Revisa el valor en efectivo.'
+  if (draft.pointsToRedeem && (!Number.isInteger(Number(draft.pointsToRedeem)) || Number(draft.pointsToRedeem) < 0)) return 'Revisa los puntos a redimir.'
   return null
 }
 
