@@ -55,11 +55,28 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 | `/admin/payments` | Cola de revisión de pagos |
 | `/admin/products` | Consulta para CASHIER; administración para ADMIN |
 | `/admin/inventory` | Consulta para CASHIER; inventario y recetas para ADMIN |
+| `/admin/customers` | Clientes, historial, puntos y repetición de pedidos |
+| `/admin/coupons` | Configuración de puntos y administración de cupones (ADMIN) |
 | `/admin/categories` | ADMIN |
 | `/admin/promotions` | ADMIN |
 | `/admin/settings` | ADMIN |
 
 El rol `ADMIN` tiene acceso completo; `CASHIER` opera pedidos y pagos y consulta productos; `KITCHEN` no puede entrar todavía al panel general. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
+
+## Clientes, puntos y cupones
+
+Cada cliente se identifica por su teléfono y conserva direcciones, historial, productos frecuentes y saldo de puntos. La regla inicial otorga un punto por cada $1.000 COP efectivamente pagados en productos. El abono sucede una sola vez al marcar el pedido como `DELIVERED`; las redenciones se reservan al crear el pedido y se devuelven si se cancela. Todos los cambios quedan en un historial auditable y los ajustes administrativos exigen motivo.
+
+Los cupones se validan exclusivamente en el backend por vigencia, compra mínima, límite total y límite por cliente. La creación del pedido vuelve a calcular precios, disponibilidad, cupón y puntos bajo bloqueo transaccional. La repetición de pedidos utiliza precios y disponibilidad actuales, nunca los valores históricos.
+
+| Método y ruta | Uso |
+| --- | --- |
+| `GET /api/v1/admin/customers` | Listado y métricas de clientes |
+| `GET /api/v1/admin/customers/{id}` | Perfil, direcciones, historial y puntos |
+| `POST /api/v1/admin/customers/{id}/points` | Ajuste auditable de puntos (ADMIN) |
+| `GET /api/v1/admin/customers/{id}/orders/{number}/repeat` | Reconstruir pedido con catálogo actual |
+| `GET/POST/PUT /api/v1/admin/coupons` | Consultar y administrar cupones |
+| `GET/PUT /api/v1/admin/loyalty/settings` | Configurar equivalencia y redención |
 
 ## Inventario y recetas
 

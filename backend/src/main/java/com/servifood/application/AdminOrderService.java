@@ -24,10 +24,12 @@ public class AdminOrderService {
     private final ReceiptStorage receipts;
     private final InventoryConsumptionService inventory;
     private final IngredientRepository ingredients;
+    private final LoyaltyService loyalty;
 
     public AdminOrderService(CustomerOrderRepository orders, PaymentRepository payments, InternalUserRepository users,
-            BusinessSettingsRepository settings, ReceiptStorage receipts, InventoryConsumptionService inventory, IngredientRepository ingredients) {
-        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts; this.inventory = inventory; this.ingredients = ingredients;
+            BusinessSettingsRepository settings, ReceiptStorage receipts, InventoryConsumptionService inventory, IngredientRepository ingredients,
+            LoyaltyService loyalty) {
+        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts; this.inventory = inventory; this.ingredients = ingredients; this.loyalty = loyalty;
     }
 
     @Transactional(readOnly = true)
@@ -71,8 +73,8 @@ public class AdminOrderService {
             case PREPARING -> { order.startPreparation(); inventory.consume(order); }
             case READY -> order.markReady();
             case ON_THE_WAY -> order.markOnTheWay();
-            case DELIVERED -> order.deliver();
-            case CANCELLED -> { order.cancel(reason); inventory.reverse(order); }
+            case DELIVERED -> { order.deliver(); loyalty.award(order); }
+            case CANCELLED -> { order.cancel(reason); inventory.reverse(order); loyalty.reverse(order); }
             default -> throw new DomainException("Transición de estado no permitida");
         }
         return detailOf(orders.save(order));

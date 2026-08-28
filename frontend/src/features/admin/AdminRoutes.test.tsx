@@ -34,8 +34,16 @@ describe('administrative routes', () => {
     expect(html).toContain('Pagos')
     expect(html).toContain('Productos')
     expect(html).toContain('Inventario')
+    expect(html).toContain('Clientes')
+    expect(html).not.toContain('Puntos y cupones')
     expect(html).not.toContain('Categorías')
     expect(html).not.toContain('Configuración')
+  })
+
+  it('shows loyalty management only to administrators', () => {
+    const html = renderRoute(state({ user: { id: 1, name: 'Admin', email: 'admin@servifood.local', role: 'ADMIN' } }), '/admin', <AdminDashboardPage />)
+    expect(html).toContain('Clientes')
+    expect(html).toContain('Puntos y cupones')
   })
 
   it('renders dashboard and order filters with recoverable loading states', () => {

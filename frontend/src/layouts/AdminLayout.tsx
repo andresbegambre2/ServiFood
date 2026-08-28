@@ -2,9 +2,9 @@ import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAdminAuth } from '../features/admin/admin-auth-context'
 
 const operational = [
-  ['⌂', 'Dashboard', '/admin'], ['▤', 'Pedidos', '/admin/orders'], ['₱', 'Pagos', '/admin/payments'], ['▦', 'Productos', '/admin/products'], ['◩', 'Inventario', '/admin/inventory'],
+  ['⌂', 'Dashboard', '/admin'], ['▤', 'Pedidos', '/admin/orders'], ['₱', 'Pagos', '/admin/payments'], ['▦', 'Productos', '/admin/products'], ['◩', 'Inventario', '/admin/inventory'], ['♙', 'Clientes', '/admin/customers'],
 ] as const
-const management = [['◫', 'Categorías', '/admin/categories'], ['%', 'Promociones', '/admin/promotions'], ['⚙', 'Configuración', '/admin/settings']] as const
+const management = [['◫', 'Categorías', '/admin/categories'], ['%', 'Promociones', '/admin/promotions'], ['◇', 'Puntos y cupones', '/admin/coupons'], ['⚙', 'Configuración', '/admin/settings']] as const
 
 export function RequireAdmin() {
   const { user, loading } = useAdminAuth()
