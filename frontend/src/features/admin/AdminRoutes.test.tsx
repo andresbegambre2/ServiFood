@@ -36,6 +36,8 @@ describe('administrative routes', () => {
     expect(html).toContain('Inventario')
     expect(html).toContain('Clientes')
     expect(html).not.toContain('Puntos y cupones')
+    expect(html).not.toContain('Analítica')
+    expect(html).not.toContain('Reportes')
     expect(html).not.toContain('Categorías')
     expect(html).not.toContain('Configuración')
   })
@@ -44,6 +46,8 @@ describe('administrative routes', () => {
     const html = renderRoute(state({ user: { id: 1, name: 'Admin', email: 'admin@servifood.local', role: 'ADMIN' } }), '/admin', <AdminDashboardPage />)
     expect(html).toContain('Clientes')
     expect(html).toContain('Puntos y cupones')
+    expect(html).toContain('Analítica')
+    expect(html).toContain('Reportes')
   })
 
   it('renders dashboard and order filters with recoverable loading states', () => {
