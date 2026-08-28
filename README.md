@@ -57,6 +57,8 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 | `/admin/inventory` | Consulta para CASHIER; inventario y recetas para ADMIN |
 | `/admin/customers` | Clientes, historial, puntos y repetición de pedidos |
 | `/admin/coupons` | Configuración de puntos y administración de cupones (ADMIN) |
+| `/admin/analytics` | Métricas, comparaciones y gráficas del negocio (ADMIN) |
+| `/admin/reports` | Reportes filtrables y exportaciones CSV (ADMIN) |
 | `/admin/categories` | ADMIN |
 | `/admin/promotions` | ADMIN |
 | `/admin/settings` | ADMIN |
@@ -77,6 +79,18 @@ Los cupones se validan exclusivamente en el backend por vigencia, compra mínima
 | `GET /api/v1/admin/customers/{id}/orders/{number}/repeat` | Reconstruir pedido con catálogo actual |
 | `GET/POST/PUT /api/v1/admin/coupons` | Consultar y administrar cupones |
 | `GET/PUT /api/v1/admin/loyalty/settings` | Configurar equivalencia y redención |
+
+## Reportes y analítica
+
+La analítica avanzada calcula ventas diarias, semanales y mensuales, comparación con períodos anteriores, pedidos, cancelaciones, ticket, demanda por producto, categoría y hora, métodos de pago, entrega, clientes, descuentos, cupones, puntos y alertas de inventario. Las gráficas usan exclusivamente las series y distribuciones retornadas por el backend.
+
+Las métricas se obtienen mediante agregaciones SQL acotadas por fecha; no cargan el historial completo ni recorren relaciones pedido a pedido. La migración V7 agrega índices para los rangos temporales de pedidos, pagos, cupones y movimientos de puntos.
+
+| Método y ruta | Uso |
+| --- | --- |
+| `GET /api/v1/admin/analytics?from=&to=` | Dashboard analítico avanzado |
+| `GET /api/v1/admin/reports/{type}?from=&to=` | Reportes de ventas, pedidos, productos, clientes, promociones, cupones y pagos |
+| `GET /api/v1/admin/reports/{type}/csv?from=&to=` | CSV de ventas, pedidos, productos, clientes o cupones |
 
 ## Inventario y recetas
 
