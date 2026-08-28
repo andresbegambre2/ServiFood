@@ -25,29 +25,22 @@ public class AdminOrderService {
     private final InventoryConsumptionService inventory;
     private final IngredientRepository ingredients;
     private final LoyaltyService loyalty;
+    private final AnalyticsQueryRepository analytics;
 
     public AdminOrderService(CustomerOrderRepository orders, PaymentRepository payments, InternalUserRepository users,
             BusinessSettingsRepository settings, ReceiptStorage receipts, InventoryConsumptionService inventory, IngredientRepository ingredients,
-            LoyaltyService loyalty) {
-        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts; this.inventory = inventory; this.ingredients = ingredients; this.loyalty = loyalty;
+            LoyaltyService loyalty, AnalyticsQueryRepository analytics) {
+        this.orders = orders; this.payments = payments; this.users = users; this.settings = settings; this.receipts = receipts; this.inventory = inventory; this.ingredients = ingredients; this.loyalty = loyalty; this.analytics = analytics;
     }
 
     @Transactional(readOnly = true)
     public Dashboard dashboard() {
         ZoneId zone = ZoneId.of(settings.findFirstByOrderByIdAsc().map(BusinessSettings::getTimeZone).orElse("America/Bogota"));
-        LocalDate today = LocalDate.now(zone);
-        List<CustomerOrder> todayOrders = orders.findAllByOrderByCreatedAtDesc().stream()
-                .filter(order -> LocalDate.ofInstant(order.getCreatedAt(), zone).equals(today)).toList();
-        List<CustomerOrder> effective = todayOrders.stream().filter(order -> order.getStatus() != OrderStatus.CANCELLED).toList();
-        BigDecimal sales = effective.stream().map(CustomerOrder::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal average = effective.isEmpty() ? BigDecimal.ZERO : sales.divide(BigDecimal.valueOf(effective.size()), 2, RoundingMode.HALF_UP);
-        Map<String, Long> quantities = effective.stream().flatMap(order -> order.getItems().stream())
-                .collect(Collectors.groupingBy(OrderItem::getProductNameSnapshot, Collectors.summingLong(OrderItem::getQuantity)));
-        List<TopProduct> top = quantities.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed()).limit(5)
-                .map(entry -> new TopProduct(entry.getKey(), entry.getValue())).toList();
-        long underReview = payments.findByStatusOrderByCreatedAtDesc(PaymentStatus.UNDER_REVIEW).size();
-        return new Dashboard(sales, todayOrders.size(), count(todayOrders, OrderStatus.NEW), count(todayOrders, OrderStatus.PREPARING),
-                underReview, ingredients.countLowStock(), ingredients.countOutOfStock(), average, todayOrders.stream().limit(8).map(this::summary).toList(), top);
+        LocalDate today = LocalDate.now(zone); var snapshot = analytics.operational(today.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant());
+        BigDecimal average = snapshot.aggregate().deliveredOrders() == 0 ? BigDecimal.ZERO : snapshot.aggregate().sales().divide(BigDecimal.valueOf(snapshot.aggregate().deliveredOrders()), 2, RoundingMode.HALF_UP);
+        return new Dashboard(snapshot.aggregate().sales(), snapshot.aggregate().totalOrders(), snapshot.newOrders(), snapshot.preparingOrders(),
+                snapshot.paymentsUnderReview(), ingredients.countLowStock(), ingredients.countOutOfStock(), average, snapshot.latestOrders(),
+                snapshot.topProducts().stream().map(value -> new TopProduct(value.label(), value.quantity())).toList());
     }
 
     @Transactional(readOnly = true)
@@ -110,7 +103,6 @@ public class AdminOrderService {
         return payment;
     }
     private InternalUser currentUser(Authentication authentication) { return users.findByEmailIgnoreCase(authentication.getName()).orElseThrow(); }
-    private long count(List<CustomerOrder> values, OrderStatus status) { return values.stream().filter(order -> order.getStatus() == status).count(); }
     private CustomerOrder order(String number) { return orders.findByPublicNumber(number).orElseThrow(() -> new ResourceNotFoundException("Order", number)); }
     private Optional<Payment> payment(CustomerOrder order) { return payments.findFirstByOrderId(order.getId()); }
     private OrderSummary summary(CustomerOrder order) {
