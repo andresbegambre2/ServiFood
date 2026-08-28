@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { CartContext, type CartContextValue } from '../features/cart/cart-context'
 import { StorefrontContext, type StorefrontContextValue } from '../features/storefront/storefront-context'
-import type { StorefrontData, TransferPayment } from '../types/public'
+import type { CheckoutQuote, StorefrontData, TransferPayment } from '../types/public'
 import { CheckoutPage, CheckoutSummary } from './CheckoutPage'
 
 const cart: CartContextValue = {
@@ -57,5 +57,15 @@ describe('CheckoutPage storefront configuration', () => {
     expect(html).toContain('No pudimos actualizar los precios')
     expect(html).toContain('Reintentar precios')
     expect(html).not.toContain('Actualizando precios')
+  })
+
+  it('shows coupon, redeemed points and points to earn from the backend quote', () => {
+    const quote: CheckoutQuote = { totals: { subtotal: 50000, discount: 15000, deliveryFee: 0, total: 35000, currency: 'COP', estimatedMinutes: 25 }, items: [], loyalty: { active: true, availablePoints: 50, pointsRedeemed: 10, pointsDiscount: 10000, couponCode: 'CLIENTE10', couponDiscount: 5000, pointsToEarn: 35, minimumPointsToRedeem: 10, maximumRedemptionPercentage: 30, amountPerPoint: 1000 } }
+    const html = renderToString(<CartContext.Provider value={cart}><CheckoutSummary quote={quote} error="" quoteError="" retryQuote={() => undefined} submitting={false} currency="COP" /></CartContext.Provider>)
+    expect(html).toContain('Cupón')
+    expect(html).toContain('CLIENTE10')
+    expect(html).toContain('10<!-- --> puntos')
+    expect(html).toContain('Ganarás')
+    expect(html).toContain('35<!-- --> puntos')
   })
 })

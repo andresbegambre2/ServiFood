@@ -3,7 +3,7 @@ import { buildCheckoutLines, completeOrderCreation, paymentMethodsFor, validateD
 import type { CartLine } from '../cart/cart'
 import type { CreatedOrder } from '../../types/public'
 
-const draft: CheckoutDraft = { name: 'Ana', phone: '3005551212', email: '', deliveryType: 'DELIVERY', address: 'Calle 1', neighborhood: 'Centro', reference: '', paymentMethod: 'CASH', cashTendered: '' }
+const draft: CheckoutDraft = { name: 'Ana', phone: '3005551212', email: '', deliveryType: 'DELIVERY', address: 'Calle 1', neighborhood: 'Centro', reference: '', paymentMethod: 'CASH', cashTendered: '', pointsToRedeem: '' }
 const line: CartLine = { id: 'line-1', productId: 8, slug: 'doble', name: 'Doble', imagePath: null, unitPriceMinor: 3200000, quantity: 2, notes: 'Sin cebolla', extras: [{ id: 3, name: 'Cheddar', unitPriceMinor: 300000 }] }
 const createdOrder = { publicNumber: 'SF-260824-ABC123', trackingToken: 'private-token' } as CreatedOrder
 
