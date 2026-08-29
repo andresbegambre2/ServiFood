@@ -1,0 +1,17 @@
+import { useEffect, useState, type FormEvent } from 'react'
+import { downloadReport, getReport } from '../api/analytics'
+import type { ReportData, ReportType } from '../types/admin'
+import { PageTitle } from './AdminDashboardPage'
+import { AdminError, AdminLoading, EmptyState } from './adminUi'
+
+const types: [ReportType, string][] = [['SALES','Ventas'],['ORDERS','Pedidos'],['PRODUCTS','Productos'],['CUSTOMERS','Clientes'],['PROMOTIONS','Promociones'],['COUPONS','Cupones'],['PAYMENTS','Métodos de pago']]
+const exports = new Set<ReportType>(['SALES','ORDERS','PRODUCTS','CUSTOMERS','COUPONS']); const iso = (date: Date) => date.toISOString().slice(0,10); const initialTo=iso(new Date()); const initialFrom=iso(new Date(Date.now()-29*86400000))
+const labels: Record<string,string> = { NEW:'Nuevo',CONFIRMED:'Confirmado',PREPARING:'En preparación',READY:'Listo',ON_THE_WAY:'En camino',DELIVERED:'Entregado',CANCELLED:'Cancelado',CASH:'Efectivo',TRANSFER:'Transferencia',PAY_ON_PICKUP:'Pago al recoger',PERCENTAGE:'Porcentaje',FIXED_AMOUNT:'Valor fijo',true:'Sí',false:'No' }
+export function AdminReportsPage() {
+  const [type,setType]=useState<ReportType>('SALES'); const [from,setFrom]=useState(initialFrom); const [to,setTo]=useState(initialTo); const [data,setData]=useState<ReportData>(); const [error,setError]=useState(''); const [loading,setLoading]=useState(true)
+  const load=(selected=type,start=from,end=to)=>{setLoading(true);setError('');getReport(selected,start,end).then(setData).catch(()=>setError('No pudimos generar el reporte.')).finally(()=>setLoading(false))}; useEffect(()=>{getReport('SALES',initialFrom,initialTo).then(setData).catch(()=>setError('No pudimos generar el reporte.')).finally(()=>setLoading(false))},[])
+  function change(selected:ReportType){setType(selected);load(selected)} function filter(event:FormEvent){event.preventDefault();load()}
+  async function exportCsv(){if(!exports.has(type))return;try{await downloadReport(type as Exclude<ReportType,'PROMOTIONS'|'PAYMENTS'>,from,to)}catch{setError('No pudimos exportar el archivo CSV.')}}
+  return <><PageTitle eyebrow="INFORMES" title="Reportes" action={exports.has(type)?<button className="secondary" onClick={()=>void exportCsv()}>Exportar CSV</button>:undefined}/><div className="inventory-tabs" role="tablist">{types.map(([value,label])=><button type="button" role="tab" aria-selected={type===value} className={type===value?'active':''} key={value} onClick={()=>change(value)}>{label}</button>)}</div><form className="analytics-filter" onSubmit={filter}><label>Desde<input type="date" value={from} onChange={event=>setFrom(event.target.value)} required/></label><label>Hasta<input type="date" value={to} onChange={event=>setTo(event.target.value)} required/></label><button className="primary">Filtrar</button></form>{error&&<AdminError message={error} retry={()=>load()}/>} {loading?<AdminLoading label="Generando reporte…"/>:data&&!data.rows.length?<EmptyState text="No hay resultados para el rango seleccionado."/>:data&&<section className="admin-table-card"><table><thead><tr>{data.columns.map(column=><th key={column}>{column}</th>)}</tr></thead><tbody>{data.rows.map((row,index)=><tr key={index}>{row.map((cell,cellIndex)=><td key={cellIndex} data-label={data.columns[cellIndex]}>{formatCell(cell)}</td>)}</tr>)}</tbody></table></section>}</>
+}
+function formatCell(value:unknown){if(value===null||value===undefined)return '—';const text=String(value);return labels[text]??text}
