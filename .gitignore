@@ -22,6 +22,14 @@ env/
 # Flask runtime data
 instance/
 uploads/
+**/var/
+tmp/
+temp/
+*.tmp
+*.log
+*.db
+*.mv.db
+*.trace.db
 *.sqlite3
 
 # Editors and operating systems
@@ -34,6 +42,8 @@ Thumbs.db
 node_modules/
 dist/
 target/
+.vite/
+*.tsbuildinfo
 
 # Environment-specific IDE files
 *.iml

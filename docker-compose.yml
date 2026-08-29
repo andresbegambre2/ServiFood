@@ -4,8 +4,8 @@ services:
     environment:
       MYSQL_DATABASE: servifood
       MYSQL_USER: servifood
-      MYSQL_PASSWORD: servifood_local
-      MYSQL_ROOT_PASSWORD: local_root_only
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Define DB_ROOT_PASSWORD in .env}
     ports:
       - "3306:3306"
     volumes:

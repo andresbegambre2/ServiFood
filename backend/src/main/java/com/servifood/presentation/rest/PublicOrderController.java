@@ -26,7 +26,9 @@ public class PublicOrderController {
     }
 
     @GetMapping("/{publicNumber}")
-    OrderTrackingResponse tracking(@PathVariable String publicNumber, @RequestParam String token) {
-        return service.tracking(publicNumber, token);
+    ResponseEntity<OrderTrackingResponse> tracking(@PathVariable String publicNumber, @RequestParam String token) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .header("Referrer-Policy", "no-referrer")
+                .body(service.tracking(publicNumber, token));
     }
 }

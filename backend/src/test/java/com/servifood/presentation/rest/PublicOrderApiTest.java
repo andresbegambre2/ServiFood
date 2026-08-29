@@ -160,6 +160,8 @@ class PublicOrderApiTest {
         String number = created.path("publicNumber").asText(); String token = created.path("trackingToken").asText();
         mvc.perform(get("/api/v1/public/orders/{number}", number).param("token", "wrong")).andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/public/orders/{number}", number).param("token", token)).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
                 .andExpect(jsonPath("$.publicNumber").value(number)).andExpect(jsonPath("$.customerName").value("Ana Cliente"))
                 .andExpect(jsonPath("$.customerPhone").doesNotExist()).andExpect(jsonPath("$.trackingToken").doesNotExist());
     }
