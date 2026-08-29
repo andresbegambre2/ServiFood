@@ -24,7 +24,7 @@ describe('business analytics views', () => {
     expect(html).toContain('Doble Bacon')
     expect(html).toContain('Transferencia')
     expect(html).toContain('Ana Cliente')
-    expect(html).toContain('ingredientes agotados')
+    expect(html).toContain('ingrediente agotado')
   })
 
   it('shows an explicit empty state instead of decorative bars without data', () => {
