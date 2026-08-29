@@ -26,8 +26,8 @@ public class PublicCatalogService {
     }
 
     public List<CategoryResponse> activeCategories() { return categories.findByActiveTrueOrderByDisplayOrderAsc().stream().map(this::category).toList(); }
-    public List<ProductSummaryResponse> availableProducts() { return products.findByAvailableTrueOrderByFeaturedDescNameAsc().stream().filter(inventory::canPrepare).map(this::summary).toList(); }
-    public List<ProductSummaryResponse> featuredProducts() { return products.findByAvailableTrueAndFeaturedTrueOrderByNameAsc().stream().filter(inventory::canPrepare).map(this::summary).toList(); }
+    public List<ProductSummaryResponse> availableProducts() { List<Product> values = products.findByAvailableTrueOrderByFeaturedDescNameAsc(); var availability = inventory.canPrepareProducts(values); return values.stream().filter(value -> availability.getOrDefault(value.getId(), false)).map(this::summary).toList(); }
+    public List<ProductSummaryResponse> featuredProducts() { List<Product> values = products.findByAvailableTrueAndFeaturedTrueOrderByNameAsc(); var availability = inventory.canPrepareProducts(values); return values.stream().filter(value -> availability.getOrDefault(value.getId(), false)).map(this::summary).toList(); }
     public ProductDetailResponse productBySlug(String slug) { Product product = products.findBySlugAndAvailableTrue(slug).filter(inventory::canPrepare).orElseThrow(() -> new ResourceNotFoundException("Product", slug)); return detail(product); }
     public List<PromotionResponse> activePromotions() { Instant now = Instant.now(); return promotions.findByActiveTrueAndStartsAtLessThanEqualAndEndsAtGreaterThanEqualOrderByEndsAtAsc(now, now).stream().map(this::promotion).toList(); }
     public BusinessPublicResponse publicBusiness() {
@@ -42,7 +42,7 @@ public class PublicCatalogService {
 
     private CategoryResponse category(Category value) { return new CategoryResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription()); }
     private ProductSummaryResponse summary(Product value) { return new ProductSummaryResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), value.isAvailable(), value.isFeatured(), category(value.getCategory())); }
-    private ProductDetailResponse detail(Product value) { return new ProductDetailResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), true, value.isFeatured(), category(value.getCategory()), value.getAllowedExtras().stream().filter(inventory::canPrepare).sorted(Comparator.comparing(Extra::getName)).map(extra -> new ExtraResponse(extra.getId(), extra.getName(), extra.getDescription(), extra.getPrice())).toList()); }
+    private ProductDetailResponse detail(Product value) { var availability = inventory.canPrepareExtras(value.getAllowedExtras()); return new ProductDetailResponse(value.getId(), value.getName(), value.getSlug(), value.getDescription(), value.getPrice(), value.getImagePath(), true, value.isFeatured(), category(value.getCategory()), value.getAllowedExtras().stream().filter(extra -> availability.getOrDefault(extra.getId(), false)).sorted(Comparator.comparing(Extra::getName)).map(extra -> new ExtraResponse(extra.getId(), extra.getName(), extra.getDescription(), extra.getPrice())).toList()); }
     private PromotionResponse promotion(Promotion value) { return new PromotionResponse(value.getId(), value.getName(), value.getDescription(), value.getDiscountType(), value.getDiscountValue(), value.getStartsAt(), value.getEndsAt(), value.getMinimumPurchase()); }
     private BusinessHoursResponse schedule(BusinessHours value) { return new BusinessHoursResponse(value.getDayOfWeek(), value.getSlotNumber(), value.getOpensAt(), value.getClosesAt(), value.isClosed()); }
 }
