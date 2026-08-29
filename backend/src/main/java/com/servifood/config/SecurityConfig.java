@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/auth/csrf").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/auth/login").permitAll()
                         .requestMatchers("/api/v1/admin/auth/**").authenticated()
+                        .requestMatchers("/api/v1/admin/kitchen/**").hasAnyRole("ADMIN", "KITCHEN")
                         .requestMatchers("/api/v1/admin/settings/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/inventory/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/admin/inventory/**").hasRole("ADMIN")

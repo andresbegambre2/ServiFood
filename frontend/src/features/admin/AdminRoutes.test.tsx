@@ -6,12 +6,13 @@ import { AdminLayout, RequireAdmin } from '../../layouts/AdminLayout'
 import { AdminLoginPage } from '../../pages/AdminLoginPage'
 import { AdminDashboardPage } from '../../pages/AdminDashboardPage'
 import { AdminOrdersPage } from '../../pages/AdminOrdersPage'
-import { label } from '../../pages/adminFormat'
+import { formatReportCell, label, quantityLabel } from '../../pages/adminFormat'
+import { KitchenPage } from '../../pages/KitchenPage'
 
 const actions = { login: async () => undefined, logout: async () => undefined, refresh: async () => undefined }
 const state = (overrides: Partial<AdminAuthState> = {}): AdminAuthState => ({ loading: false, ...actions, ...overrides })
 function renderRoute(value: AdminAuthState, path: string, page: React.ReactNode) {
-  return renderToString(<MemoryRouter initialEntries={[path]}><AdminAuthContext.Provider value={value}><Routes><Route path="/admin/login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route path="/admin" element={page} /><Route path="/admin/orders" element={page} /></Route></Route></Routes></AdminAuthContext.Provider></MemoryRouter>)
+  return renderToString(<MemoryRouter initialEntries={[path]}><AdminAuthContext.Provider value={value}><Routes><Route path="/admin/login" element={<AdminLoginPage />} /><Route element={<RequireAdmin />}><Route element={<AdminLayout />}><Route path="/admin" element={page} /><Route path="/admin/orders" element={page} /><Route path="/admin/kitchen" element={page} /></Route></Route></Routes></AdminAuthContext.Provider></MemoryRouter>)
 }
 
 describe('administrative routes', () => {
@@ -22,10 +23,12 @@ describe('administrative routes', () => {
     expect(html).not.toContain('sesión expiró')
   })
 
-  it('blocks the kitchen role from the general administration panel', () => {
-    const html = renderRoute(state({ user: { id: 3, name: 'Cocina', email: 'kitchen@servifood.local', role: 'KITCHEN' } }), '/admin', <AdminDashboardPage />)
-    expect(html).toContain('Este panel aún no está disponible para Cocina')
+  it('shows only the scoped kitchen workspace to the kitchen role', () => {
+    const html = renderRoute(state({ user: { id: 3, name: 'Cocina', email: 'kitchen@servifood.local', role: 'KITCHEN' } }), '/admin/kitchen', <KitchenPage />)
+    expect(html).toContain('Preparando la vista de cocina')
+    expect(html).toContain('Cocina')
     expect(html).not.toContain('Configuración')
+    expect(html).not.toContain('KITCHEN')
   })
 
   it('shows operational navigation but hides critical settings from cashier', () => {
@@ -52,7 +55,7 @@ describe('administrative routes', () => {
 
   it('renders dashboard and order filters with recoverable loading states', () => {
     const admin = state({ user: { id: 1, name: 'Admin', email: 'admin@servifood.local', role: 'ADMIN' } })
-    expect(renderRoute(admin, '/admin', <AdminDashboardPage />)).toContain('Preparando el dashboard')
+    expect(renderRoute(admin, '/admin', <AdminDashboardPage />)).toContain('Preparando el panel')
     const orders = renderRoute(admin, '/admin/orders', <AdminOrdersPage />)
     expect(orders).toContain('Buscar pedido o cliente')
     expect(orders).toContain('Cargando pedidos')
@@ -60,5 +63,19 @@ describe('administrative routes', () => {
 
   it('uses the backend payment method contract for pickup orders', () => {
     expect(label('PAY_ON_PICKUP')).toBe('Pago al recoger')
+    expect(label('ADMIN')).toBe('Administración')
+    expect(label('CASHIER')).toBe('Caja')
+    expect(label('KITCHEN')).toBe('Cocina')
+  })
+
+  it('uses correct singular and plural labels in customer summaries', () => {
+    expect(quantityLabel(1, 'pedido', 'pedidos')).toBe('1 pedido')
+    expect(quantityLabel(2, 'pedido', 'pedidos')).toBe('2 pedidos')
+    expect(quantityLabel(1, 'unidad', 'unidades')).toBe('1 unidad')
+  })
+
+  it('formats report dates and monetary values for the Spanish interface', () => {
+    expect(formatReportCell(32450, 'Ventas', 'SALES')).toContain('32.450')
+    expect(formatReportCell('2026-08-25T05:00:00.000Z', 'Fecha', 'SALES')).not.toContain('T05:00')
   })
 })
