@@ -2,9 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/base.css'
 import App from './App.tsx'
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <GlobalErrorBoundary><App /></GlobalErrorBoundary>
   </StrictMode>,
 )

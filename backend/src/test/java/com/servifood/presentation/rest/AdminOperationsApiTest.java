@@ -54,7 +54,27 @@ class AdminOperationsApiTest {
         mvc.perform(get("/api/v1/admin/products").with(user("cashier-ops@servifood.local").roles("CASHIER"))).andExpect(status().isOk());
         mvc.perform(get("/api/v1/admin/settings").with(user("cashier-ops@servifood.local").roles("CASHIER"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/admin/dashboard").with(user("kitchen-ops@servifood.local").roles("KITCHEN"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/admin/kitchen/orders").with(user("cashier-ops@servifood.local").roles("CASHIER"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/admin/dashboard")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void givesKitchenOnlyThePreparationWorkflow() throws Exception {
+        mvc.perform(get("/api/v1/admin/kitchen/orders").with(user("kitchen-ops@servifood.local").roles("KITCHEN")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].publicNumber").value(order.getPublicNumber()))
+                .andExpect(jsonPath("$[0].customerName").doesNotExist()).andExpect(jsonPath("$[0].items[0].notes").value("Sin cebolla"));
+        mvc.perform(patch("/api/v1/admin/kitchen/orders/{number}/status", order.getPublicNumber())
+                .with(user("kitchen-ops@servifood.local").roles("KITCHEN")).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("status", "PREPARING"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PREPARING"));
+        mvc.perform(patch("/api/v1/admin/kitchen/orders/{number}/status", order.getPublicNumber())
+                .with(user("kitchen-ops@servifood.local").roles("KITCHEN")).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("status", "READY"))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("READY"));
+        mvc.perform(patch("/api/v1/admin/kitchen/orders/{number}/status", order.getPublicNumber())
+                .with(user("kitchen-ops@servifood.local").roles("KITCHEN")).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("status", "DELIVERED"))))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

@@ -1,16 +1,21 @@
 spring:
   application:
     name: servifood-api
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
   autoconfigure:
     exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/servifood?createDatabaseIfNotExist=true&serverTimezone=UTC}
     username: ${DB_USERNAME:servifood}
-    password: ${DB_PASSWORD:servifood_local}
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
   flyway:
     enabled: true
   servlet:
@@ -20,6 +25,13 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:8h}
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
   error:
     include-message: never
     include-stacktrace: never
@@ -29,7 +41,7 @@ app:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
   orders:
     allow-when-closed: ${ALLOW_ORDERS_WHEN_CLOSED:false}
-    tracking-secret: ${TRACKING_SECRET:local-development-tracking-secret-change-before-production}
+    tracking-secret: ${TRACKING_SECRET}
   uploads:
     receipts-directory: ${RECEIPTS_DIRECTORY:./var/receipts}
     receipts-max-bytes: ${RECEIPTS_MAX_BYTES:5242880}

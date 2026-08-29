@@ -25,8 +25,13 @@ public class AdminInventoryService {
     @Transactional(readOnly = true)
     public Overview overview() {
         List<IngredientView> ingredientViews = ingredients.findAllByOrderByNameAsc().stream().map(this::view).toList();
+        List<Product> productValues = products.findAllByOrderByNameAsc(); List<Extra> extraValues = extras.findAllByOrderByNameAsc();
+        Map<Long, List<ProductRecipeIngredient>> productLines = productRecipes.findByProductIdInOrderByIngredientNameAsc(productValues.stream().map(Product::getId).toList()).stream().collect(java.util.stream.Collectors.groupingBy(line -> line.getProduct().getId()));
+        Map<Long, List<ExtraRecipeIngredient>> extraLines = extraRecipes.findByExtraIdInOrderByIngredientNameAsc(extraValues.stream().map(Extra::getId).toList()).stream().collect(java.util.stream.Collectors.groupingBy(line -> line.getExtra().getId()));
+        Map<Long, Boolean> productAvailability = availability.canPrepareProducts(productValues); Map<Long, Boolean> extraAvailability = availability.canPrepareExtras(extraValues);
         return new Overview(ingredientViews.size(), ingredients.countLowStock(), ingredients.countOutOfStock(), ingredientViews,
-                products.findAllByOrderByNameAsc().stream().map(this::recipe).toList(), extras.findAllByOrderByNameAsc().stream().map(this::recipe).toList(),
+                productValues.stream().map(value -> recipe(value, productLines.getOrDefault(value.getId(), List.of()), productAvailability.getOrDefault(value.getId(), false))).toList(),
+                extraValues.stream().map(value -> recipe(value, extraLines.getOrDefault(value.getId(), List.of()), extraAvailability.getOrDefault(value.getId(), false))).toList(),
                 movements.findTop200ByOrderByCreatedAtDesc().stream().map(this::movement).toList());
     }
 
@@ -73,6 +78,8 @@ public class AdminInventoryService {
     private IngredientView view(Ingredient value) { return new IngredientView(value.getId(), value.getName(), value.getUnit(), value.getStockCurrent(), value.getStockMinimum(), value.getUnitCost(), value.isActive(), !value.isActive() ? "INACTIVE" : value.isOutOfStock() ? "OUT" : value.isLowStock() ? "LOW" : "OK"); }
     private RecipeView recipe(Product value) { return new RecipeView(value.getId(), value.getName(), availability.canPrepare(value), productRecipes.findByProductIdOrderByIngredientNameAsc(value.getId()).stream().map(this::line).toList()); }
     private RecipeView recipe(Extra value) { return new RecipeView(value.getId(), value.getName(), availability.canPrepare(value), extraRecipes.findByExtraIdOrderByIngredientNameAsc(value.getId()).stream().map(this::line).toList()); }
+    private RecipeView recipe(Product value, List<ProductRecipeIngredient> lines, boolean available) { return new RecipeView(value.getId(), value.getName(), available, lines.stream().map(this::line).toList()); }
+    private RecipeView recipe(Extra value, List<ExtraRecipeIngredient> lines, boolean available) { return new RecipeView(value.getId(), value.getName(), available, lines.stream().map(this::line).toList()); }
     private RecipeLine line(ProductRecipeIngredient value) { return new RecipeLine(value.getIngredient().getId(), value.getIngredient().getName(), value.getIngredient().getUnit(), value.getQuantity()); }
     private RecipeLine line(ExtraRecipeIngredient value) { return new RecipeLine(value.getIngredient().getId(), value.getIngredient().getName(), value.getIngredient().getUnit(), value.getQuantity()); }
     private MovementView movement(InventoryMovement value) { return new MovementView(value.getId(), value.getIngredient().getId(), value.getIngredient().getName(), value.getType(), value.getQuantityDelta(), value.getBalanceAfter(), value.getReason(), value.getOrder() == null ? null : value.getOrder().getPublicNumber(), value.getCreatedBy() == null ? null : value.getCreatedBy().getName(), value.getCreatedAt()); }

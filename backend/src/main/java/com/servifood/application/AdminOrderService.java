@@ -46,13 +46,13 @@ public class AdminOrderService {
     @Transactional(readOnly = true)
     public List<OrderSummary> list(OrderStatus status, PaymentMethod method, DeliveryType deliveryType, LocalDate date, String query) {
         String term = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        return orders.findAllByOrderByCreatedAtDesc().stream()
-                .filter(order -> status == null || order.getStatus() == status)
-                .filter(order -> deliveryType == null || order.getDeliveryType() == deliveryType)
-                .filter(order -> date == null || LocalDate.ofInstant(order.getCreatedAt(), ZoneId.systemDefault()).equals(date))
-                .filter(order -> term.isEmpty() || order.getPublicNumber().toLowerCase(Locale.ROOT).contains(term) || order.getCustomerNameSnapshot().toLowerCase(Locale.ROOT).contains(term))
-                .filter(order -> method == null || payment(order).map(Payment::getMethod).orElse(null) == method)
-                .map(this::summary).toList();
+        ZoneId zone = ZoneId.of(settings.findFirstByOrderByIdAsc().map(BusinessSettings::getTimeZone).orElse("America/Bogota"));
+        Instant from = date == null ? null : date.atStartOfDay(zone).toInstant();
+        Instant to = date == null ? null : date.plusDays(1).atStartOfDay(zone).toInstant();
+        return orders.findOrderSummaries(status, method, deliveryType, from, to, term).stream()
+                .map(value -> new OrderSummary(value.getPublicNumber(), value.getCustomerName(), value.getCreatedAt(),
+                        value.getDeliveryType(), value.getTotal(), value.getPaymentMethod(), value.getPaymentStatus(), value.getOrderStatus()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -75,8 +75,8 @@ public class AdminOrderService {
 
     @Transactional(readOnly = true)
     public List<PaymentQueueItem> paymentQueue(PaymentStatus status) {
-        List<Payment> values = status == null ? payments.findAll() : payments.findByStatusOrderByCreatedAtDesc(status);
-        return values.stream().sorted(Comparator.comparing(Payment::getCreatedAt).reversed()).map(payment -> new PaymentQueueItem(
+        List<Payment> values = status == null ? payments.findAllByOrderByCreatedAtDesc() : payments.findByStatusOrderByCreatedAtDesc(status);
+        return values.stream().map(payment -> new PaymentQueueItem(
                 payment.getOrder().getPublicNumber(), payment.getOrder().getCustomerNameSnapshot(), payment.getCreatedAt(), payment.getAmount(),
                 payment.getMethod(), payment.getStatus(), payment.getReceiptPath() != null)).toList();
     }

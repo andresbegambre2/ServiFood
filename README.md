@@ -1,8 +1,21 @@
 # ServiFood
 
-Plataforma web para centralizar la experiencia de clientes y la operación de restaurantes. El repositorio incluye una tienda pública demostrable, una API REST y el modelo de dominio que servirá de base para las siguientes fases.
+ServiFood es una plataforma web integral para restaurantes que conecta la compra del cliente con la operación diaria del negocio. Resuelve la fragmentación entre menú digital, toma de pedidos, cocina, pagos, inventario, fidelización y reportes mediante una sola aplicación con reglas autoritativas en el backend.
+
+El repositorio contiene una tienda pública demostrable, un panel interno por roles y una API REST lista para ejecutarse localmente con datos de muestra. La implementación prioriza consistencia transaccional, seguridad, accesibilidad, diseño responsive y una separación clara por capas.
 
 La marca de demostración de la tienda es **Distrito Smash**. ServiFood continúa siendo el nombre del software y ninguna regla funcional depende de esa identidad visual.
+
+## Módulos
+
+- tienda, catálogo, personalización, carrito y checkout como invitado;
+- seguimiento privado de pedidos;
+- operación de pedidos, pagos y comprobantes;
+- vista de producción para cocina;
+- productos, categorías, promociones y configuración del negocio;
+- inventario, recetas, movimientos y alertas;
+- clientes, puntos, cupones e historial de compra;
+- analítica, reportes por fecha y exportaciones CSV.
 
 ## Experiencia pública
 
@@ -50,6 +63,7 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 | --- | --- |
 | `/admin/login` | Usuarios internos |
 | `/admin` | Dashboard para ADMIN y CASHIER |
+| `/admin/kitchen` | Producción para Cocina y Administración |
 | `/admin/orders` | Gestión de pedidos |
 | `/admin/orders/:publicNumber` | Detalle, pago y cambio de estado |
 | `/admin/payments` | Cola de revisión de pagos |
@@ -63,7 +77,7 @@ El equipo interno dispone de un panel responsive independiente del storefront:
 | `/admin/promotions` | ADMIN |
 | `/admin/settings` | ADMIN |
 
-El rol `ADMIN` tiene acceso completo; `CASHIER` opera pedidos y pagos y consulta productos; `KITCHEN` no puede entrar todavía al panel general. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
+El rol de Administración tiene acceso completo; Caja opera pedidos y pagos y consulta los módulos operativos; Cocina solo accede a la vista de producción y puede iniciar o finalizar la preparación. El perfil `dev` crea usuarios demostrativos para los tres roles usando exclusivamente el valor local de `DEMO_ADMIN_PASSWORD`.
 
 ## Clientes, puntos y cupones
 
@@ -142,8 +156,8 @@ ServiFood/
 │       ├── api/                     Cliente y contratos de catálogo
 │       ├── components/              Componentes reutilizables
 │       ├── features/cart/           Estado, persistencia y UI del carrito
-│       ├── layouts/                 Layout público responsive
-│       ├── pages/                   Páginas de la tienda
+│       ├── layouts/                 Layouts público y administrativo
+│       ├── pages/                   Tienda, operación, cocina y reportes
 │       ├── types/                   DTOs TypeScript
 │       └── utils/                   Moneda y utilidades
 ├── docs/domain-model.md             Decisiones del dominio
@@ -163,7 +177,7 @@ ServiFood/
 
 Requisitos: JDK 21, Node.js 22 o superior y MySQL 8 compatible. Maven Wrapper está incluido.
 
-1. Copia `.env.example` como `.env` y ajusta únicamente tus credenciales locales.
+1. Copia `.env.example` como `.env` y ajusta únicamente tus credenciales locales. El backend importa este archivo opcionalmente al ejecutarse desde `backend` o desde la raíz.
 2. Inicia MySQL con `docker compose up -d mysql` o utiliza una instancia equivalente.
 3. Define al menos `SPRING_PROFILES_ACTIVE=dev`, `DEMO_ADMIN_PASSWORD` y un `TRACKING_SECRET` local de 32 caracteres o más.
 4. Desde `backend`, ejecuta `./mvnw spring-boot:run` (`mvnw.cmd spring-boot:run` en Windows).
@@ -171,11 +185,19 @@ Requisitos: JDK 21, Node.js 22 o superior y MySQL 8 compatible. Maven Wrapper es
 
 La tienda queda disponible en `http://localhost:5173` y la API en `http://localhost:8080`.
 
-El perfil `dev` crea, sobre una base vacía, un catálogo demostrativo con cinco categorías, productos, extras, una promoción, horarios, transferencia y la configuración pública de Distrito Smash. Si la base demo ya contiene el catálogo, completa de forma no destructiva la nueva configuración de checkout. `DEMO_ADMIN_PASSWORD` siempre debe definirse: no existe una contraseña predeterminada ni se documentan credenciales reales.
+El perfil `dev` ejecuta Flyway y crea, sobre una base vacía, un catálogo demostrativo con cinco categorías, productos, extras, una promoción, horarios, transferencia, ingredientes, recetas, cupones y la configuración pública de Distrito Smash. Si la base ya contiene el catálogo, completa los datos demostrativos de forma no destructiva. `DEMO_ADMIN_PASSWORD` siempre debe definirse: no existe una contraseña predeterminada ni se documentan credenciales reales.
+
+Usuarios creados en desarrollo:
+
+| Rol | Correo demo | Contraseña |
+| --- | --- | --- |
+| Administración | `admin@servifood.local` | Valor local de `DEMO_ADMIN_PASSWORD` |
+| Caja | `cashier@servifood.local` | Valor local de `DEMO_ADMIN_PASSWORD` |
+| Cocina | `kitchen@servifood.local` | Valor local de `DEMO_ADMIN_PASSWORD` |
 
 Para probar pedidos fuera del horario configurado se puede definir temporalmente `ALLOW_ORDERS_WHEN_CLOSED=true`; no se recomienda fuera de una prueba local. Los comprobantes se guardan por defecto en `backend/var/receipts`, ruta ignorada por Git y no servida por HTTP.
 
-Variables nuevas:
+Variables de entorno:
 
 | Variable | Uso |
 | --- | --- |
@@ -185,6 +207,31 @@ Variables nuevas:
 | `RECEIPTS_MAX_BYTES` | Tamaño máximo del archivo; predeterminado 5 MiB |
 | `IMAGES_DIRECTORY` | Directorio configurable de imágenes administradas |
 | `IMAGES_MAX_BYTES` | Tamaño máximo para imágenes; predeterminado 5 MiB |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | Conexión MySQL; la contraseña no tiene valor predeterminado |
+| `DB_ROOT_PASSWORD` | Contraseña local del contenedor MySQL; solo la consume Docker Compose |
+| `SERVER_PORT` | Puerto de la API; predeterminado `8080` |
+| `CORS_ALLOWED_ORIGIN` | Origen exacto autorizado para el frontend |
+| `SPRING_PROFILES_ACTIVE` | `dev` para datos demo; omitir o usar `prod` en despliegues |
+| `DEMO_ADMIN_PASSWORD` | Contraseña local compartida por los usuarios demo; solo perfil `dev` |
+| `SESSION_TIMEOUT` | Duración máxima de la sesión administrativa; predeterminado `8h` |
+| `SESSION_COOKIE_SECURE` | Exige HTTPS para la cookie; debe ser `true` fuera de desarrollo |
+| `VITE_API_URL` | URL pública de la API consumida durante el build del frontend |
+
+## Base de datos y Flyway
+
+MySQL 8.4 es la base principal. Hibernate opera con `ddl-auto=validate`: el esquema se crea y evoluciona únicamente mediante las migraciones inmutables de `backend/src/main/resources/db/migration`. Las pruebas ejecutan las mismas migraciones sobre H2 en modo compatible con MySQL. Para una instalación nueva basta con iniciar una base vacía; Flyway aplica las versiones en orden antes de que JPA valide el modelo.
+
+## Seguridad
+
+- autenticación interna con sesión, BCrypt y protección frente a fijación de sesión proporcionada por Spring Security;
+- CSRF obligatorio para operaciones administrativas y excepción acotada a la creación pública de pedidos;
+- CORS con origen explícito y credenciales controladas;
+- autorización por rol aplicada en backend, incluida una API mínima para Cocina sin datos personales ni pagos;
+- cookies `HttpOnly`, `SameSite=Lax` y `Secure` obligatorio con el perfil de producción;
+- seguimiento mediante token firmado, comparación en tiempo constante, respuestas sin caché y política sin referente;
+- comprobantes privados e imágenes validados por tamaño, tipo, extensión, firma y ruta normalizada;
+- DTOs, Bean Validation y recálculo backend para precios, descuentos, puntos, cupones y disponibilidad;
+- errores de producción sin mensajes internos ni trazas, y límite global de errores en React para evitar pantallas blancas.
 
 ## Carrito y dinero
 
@@ -204,8 +251,29 @@ npm run test
 npm run build
 ```
 
-Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, delivery, pickup, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos, operaciones administrativas e inventario concurrente. Las pruebas del frontend cubren carrito, checkout, login administrativo, rutas protegidas, roles, dashboard, filtros, manejo de sesión y administración de inventario y recetas.
+Las pruebas del backend usan H2 efímero en modo compatible con MySQL, ejecutan las migraciones Flyway y levantan el contexto de Spring sin credenciales reales. Cubren dominio, persistencia, domicilio, recogida, totales, snapshots, extras, pagos, comprobantes, idempotencia, seguimiento, autenticación, permisos, cocina, inventario concurrente, fidelización, métricas y exportaciones. Las pruebas del frontend cubren carrito, checkout, recuperación ante errores, modales accesibles, login administrativo, rutas protegidas, roles, dashboard, filtros, clientes, analítica, inventario y recetas.
 
 El workflow `.github/workflows/ci.yml` ejecuta en Pull Requests a `main` y pushes relevantes: suite backend con Java 21, instalación reproducible, lint, tests y build frontend con Node 22, además de verificación de espacios en los cambios. CI usa H2 y no requiere secretos.
 
 Los detalles de entidades, relaciones, snapshots históricos y horarios se documentan en [`docs/domain-model.md`](docs/domain-model.md). Las decisiones de checkout, idempotencia, privacidad y comprobantes están en [`docs/order-checkout.md`](docs/order-checkout.md).
+
+## Capturas para portafolio
+
+Los espacios recomendados para capturas finales son:
+
+1. portada y menú responsive de Distrito Smash;
+2. checkout con cotización, cupón y puntos;
+3. panel operativo y detalle del pedido;
+4. tablero de Cocina;
+5. inventario con alertas y movimientos;
+6. analítica y reportes.
+
+Las capturas deben generarse con datos demo, sin comprobantes reales, teléfonos personales ni credenciales visibles. Hasta definir el entorno público definitivo, esta lista funciona como guía de reemplazo para las imágenes del caso de estudio.
+
+## Roadmap
+
+- despliegue demostrativo con dominio y observabilidad;
+- recuperación de acceso y administración avanzada de usuarios internos;
+- notificaciones transaccionales por canales configurables;
+- paginación del catálogo y de listados internos para volúmenes superiores;
+- pruebas de extremo a extremo en navegador dentro de CI.

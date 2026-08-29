@@ -37,9 +37,9 @@ export function CheckoutPage() {
     return () => { window.clearTimeout(timer); controller.abort() }
   }, [cart.lines, draft.deliveryType, draft.phone, draft.pointsToRedeem, appliedCoupon, quoteAttempt])
 
-  if (cart.lines.length === 0) return <main className="checkout-page"><section className="state-panel"><span>✓</span><p className="eyebrow">Checkout</p><h1>Tu carrito está vacío.</h1><p>Elige algo del menú antes de continuar.</p><Link className="button button--acid" to="/menu">Ver menú</Link></section></main>
-  if (loading && !data) return <main className="checkout-page"><section className="state-panel" aria-live="polite"><span>•••</span><p className="eyebrow">Checkout</p><h1>Preparando tu pedido.</h1><p>Estamos cargando las formas de entrega y pago del restaurante.</p></section></main>
-  if (!data) return <main className="checkout-page"><section className="state-panel" role="alert"><span>!</span><p className="eyebrow">Checkout</p><h1>No pudimos cargar la configuración.</h1><p>{storefrontError ?? 'Intenta nuevamente para continuar con tu pedido.'}</p><button className="button button--acid" type="button" onClick={retry}>Intentar de nuevo</button></section></main>
+  if (cart.lines.length === 0) return <main className="checkout-page"><section className="state-panel"><span>✓</span><p className="eyebrow">Finalizar pedido</p><h1>Tu carrito está vacío.</h1><p>Elige algo del menú antes de continuar.</p><Link className="button button--acid" to="/menu">Ver menú</Link></section></main>
+  if (loading && !data) return <main className="checkout-page"><section className="state-panel" aria-live="polite"><span>•••</span><p className="eyebrow">Finalizar pedido</p><h1>Preparando tu pedido.</h1><p>Estamos cargando las formas de entrega y pago del restaurante.</p></section></main>
+  if (!data) return <main className="checkout-page"><section className="state-panel" role="alert"><span>!</span><p className="eyebrow">Finalizar pedido</p><h1>No pudimos cargar la configuración.</h1><p>{storefrontError ?? 'Intenta nuevamente para continuar con tu pedido.'}</p><button className="button button--acid" type="button" onClick={retry}>Intentar de nuevo</button></section></main>
 
   const transfer = data.business.transfer ?? null
   const methods = paymentMethodsFor(draft.deliveryType, transfer?.configured === true)

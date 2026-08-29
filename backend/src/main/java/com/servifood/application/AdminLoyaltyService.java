@@ -24,7 +24,8 @@ public class AdminLoyaltyService {
         this.redemptions = redemptions; this.settings = settings; this.inventory = inventory;
     }
     @Transactional(readOnly = true)
-    public List<CustomerSummary> customers() { return customers.findAllByOrderByNameAsc().stream().map(this::summary).toList(); }
+    public List<CustomerSummary> customers() { return orders.findCustomerSummaries().stream().map(value -> new CustomerSummary(
+            value.getId(), value.getName(), value.getPhone(), value.getPoints(), value.getOrderCount(), value.getTotalSpent(), value.getLastOrderAt())).toList(); }
     @Transactional(readOnly = true)
     public CustomerProfile customer(Long id) {
         Customer customer = customers.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer", id));
@@ -64,7 +65,6 @@ public class AdminLoyaltyService {
     @Transactional public CouponView updateCoupon(Long id, CouponRequest request) { Coupon coupon = coupons.findById(id).orElseThrow(() -> new ResourceNotFoundException("Coupon", id)); coupons.findByCodeIgnoreCase(request.code()).filter(other -> !other.getId().equals(id)).ifPresent(other -> { throw new DomainException("El código ya existe"); }); coupon.update(request.code(), request.discountType(), request.discountValue(), request.startsAt(), request.endsAt(), request.minimumPurchase(), request.totalUsageLimit(), request.perCustomerUsageLimit(), request.active()); return coupon(coupon); }
     @Transactional(readOnly = true) public LoyaltySettingsView settings() { return setting(settings.findFirstByOrderByIdAsc().orElseThrow()); }
     @Transactional public LoyaltySettingsView updateSettings(LoyaltySettingsRequest request) { LoyaltySettings value = settings.findFirstByOrderByIdAsc().orElseThrow(); value.update(request.amountPerPoint(), request.minimumPointsToRedeem(), request.maximumRedemptionPercentage(), request.active()); return setting(value); }
-    private CustomerSummary summary(Customer customer) { List<CustomerOrder> history = orders.findByCustomerIdOrderByCreatedAtDesc(customer.getId()); BigDecimal spent = history.stream().filter(order -> order.getStatus() == OrderStatus.DELIVERED).map(CustomerOrder::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add); return new CustomerSummary(customer.getId(), customer.getName(), customer.getPhone(), customer.getPointsBalance(), history.size(), spent, history.isEmpty() ? null : history.get(0).getCreatedAt()); }
     private CustomerOrderView orderView(CustomerOrder order) { return new CustomerOrderView(order.getPublicNumber(), order.getCreatedAt(), order.getStatus(), order.getTotal(), order.getDiscount(), order.getCouponCodeSnapshot(), order.getPointsRedeemed(), order.getPointsEarned()); }
     private PointMovementView movement(LoyaltyPointMovement value) { return new PointMovementView(value.getId(), value.getType(), value.getPointsDelta(), value.getBalanceAfter(), value.getReason(), value.getOrder() == null ? null : value.getOrder().getPublicNumber(), value.getCreatedBy() == null ? null : value.getCreatedBy().getName(), value.getCreatedAt()); }
     private Coupon entity(CouponRequest request) { return new Coupon(request.code(), request.discountType(), request.discountValue(), request.startsAt(), request.endsAt(), request.minimumPurchase(), request.totalUsageLimit(), request.perCustomerUsageLimit(), request.active()); }
